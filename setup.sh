@@ -2,6 +2,7 @@
 set -euo pipefail
 LAUNCHER_DIR="$HOME/Documents/ATLauncher"
 JAVA_BASE="$HOME/Documents"
+FLAG="$HOME/.geometrysetup"
 
 install_java() {
   local JAVA_VER=$1
@@ -14,6 +15,13 @@ install_java() {
     rm /tmp/java-corretto.tar.gz
   fi
 }
+
+
+
+if [ ! -f "$FLAG" ]; then
+    osascript -e 'display dialog "This tool will get you set up with Minecraft in just a few steps\nATLauncher is used, being a launcher for modpacks/instances that you can customize.\nYou need to sign in with your minecraft account on it, and select the custom Java version." buttons {"Continue"} default button "Continue" with title "Intro to Setup"'
+    touch "$FLAG"
+fi
 
 INSTALL_JAVA=$(osascript -e 'button returned of (display dialog "Do you want to install Java? You need at least one." buttons {"No", "Yes"} default button "Yes")')
 if [[ "$INSTALL_JAVA" = "Yes" ]]; then
