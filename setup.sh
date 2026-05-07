@@ -21,7 +21,7 @@ install_java() {
 #    touch "$FLAG"
 #fi
 
-INSTALL_JAVA=$(osascript -e 'button returned of (display dialog "Do you want to install Java?\nNOTE: YOU NEED TO INSTALL ATLEAST ONE THE FIRST TIME." buttons {"No", "Yes"} default button "Yes")')
+INSTALL_JAVA=$(osascript -e 'button returned of (display dialog "Do you want to install Java?\nNOTE: Required atleast one for first time!" buttons {"No", "Yes"} default button "Yes")')
 if [[ "$INSTALL_JAVA" = "Yes" ]]; then
   JAVA_CHOICE=$(osascript -e 'choose from list {"Java 8 (Minecraft 1.16.5 and below)", "Java 17 (Minecraft 1.17 – 1.20.4)", "Java 21 (Minecraft 1.20.5+)", "Java 26 (Minecraft 26.1+)", "Install All"} with title "Java Installer" with prompt "Select a Java version for Minecraft:" OK button name "Install" cancel button name "Cancel"')
   case "$JAVA_CHOICE" in
