@@ -34,6 +34,9 @@ if [[ ! -d "$LAUNCHER_DIR" ]]; then
   curl -L -o "$LAUNCHER_DIR/ATLauncher.jar" "$(curl -s https://api.github.com/repos/ATLauncher/ATLauncher/releases/latest | grep -o 'https://[^"]*\.jar')"
 fi
 
+pkill -f "ATLauncher.jar" 2>/dev/null
+sleep 1
+
 for VER in 21 17 8; do
   JAVA_BIN="$JAVA_BASE/Java$VER/Contents/Home/bin/java"
   if [ -f "$JAVA_BIN" ]; then
