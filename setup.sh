@@ -27,11 +27,12 @@ INSTALL_JAVA=$(osascript -e 'button returned of (display dialog "Do you want to 
 if [[ "$INSTALL_JAVA" = "Yes" ]]; then
   JAVA_CHOICE=$(osascript -e 'choose from list {"Java 8 (Minecraft 1.16.5 and below)", "Java 17 (Minecraft 1.17 – 1.20.4)", "Java 21 (Minecraft 1.20.5+)", "Java 26 (Minecraft 26.1+)", "Install All"} with title "Java Installer" with prompt "Select a Java version for Minecraft:" OK button name "Install" cancel button name "Cancel"')
   case "$JAVA_CHOICE" in
-    *"Java 8 (WIP)"*) install_java 8 ;;
+    *"Java 8"*) install_java 8 ;;
     *"Java 17"*)  install_java 17 ;;
     *"Java 21"*)  install_java 21 ;;
     *"Java 26"*)  install_java 26 ;;
     *"Install All"*) install_java 8; install_java 17; install_java 21 ; install_java 26 ;;
+    *) ;;
   esac
 
   [ "$JAVA_CHOICE" != "false" ] && osascript -e 'display notification "Java installation complete!" with title "Java Installer"'
@@ -45,7 +46,7 @@ fi
 pkill -f "ATLauncher.jar" 2>/dev/null
 sleep 1
 
-for VER in 21 17 8; do
+for VER in 26 21 17 8; do
   JAVA_BIN="$JAVA_BASE/Java$VER/Contents/Home/bin/java"
   if [ -f "$JAVA_BIN" ]; then
     cd "$LAUNCHER_DIR"
