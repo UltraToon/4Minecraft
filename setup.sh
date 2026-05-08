@@ -6,7 +6,7 @@ LAUNCHER_DIR="$MCDIR/ATLauncher"
 install_java() {
   local JAVA_DIR="$MCDIR/Java$1"
   [ -d "$JAVA_DIR" ] && return
-  osascript -e "display dialog \"Installing Java $1...\nPlease wait, this may take a few minutes.\" buttons {\"OK\"} default button \"OK\" with title \"SEHS Minecraft\"" &
+  osascript -e "display dialog \"Installing Java $1...\nThis one-time process may take a few minutes.\" buttons {\"OK\"} default button \"OK\" with title \"Java Installer\"" &
   local DIALOG=$!
   mkdir -p "$JAVA_DIR" #Also creates MCDIR if it doesn't exist
   curl -L -o /tmp/java-corretto.tar.gz "https://corretto.aws/downloads/latest/amazon-corretto-${1}-aarch64-macos-jdk.tar.gz"
@@ -15,7 +15,7 @@ install_java() {
   kill $DIALOG 2>/dev/null
 }
 while true; do
-  ACTION=$(osascript -e 'button returned of (display dialog "Welcome to Minecraft @ SEHS\nClick Set Up to install Java and launch ATLauncher." buttons {"Info", "Troubleshooting", "Set Up"} default button "Set Up" with title "SEHS Minecraft")')
+  ACTION=$(osascript -e 'button returned of (display dialog "Welcome to Minecraft @ SEHS\nClick Launch to launch ATLauncher for minecraft." buttons {"Info", "Troubleshooting", "Launch"} default button "Launch" with title "SEHS Minecraft")')
   case "$ACTION" in
   "Info")
     osascript -e 'display dialog "ATLauncher lets you create and manage Minecraft instances.\n\nGetting started:\n• Sign in via Accounts tab with your Microsoft account\n• Go to Instances and click Add Instance\n• Pick a version or modpack and click Install\n• Hit Play when done\n\nEach instance is separate, great for different modpacks or versions. When using a version, you can install individual mods to it, depending on the modloader/version" buttons {"Back"} with title "Info"'
@@ -23,7 +23,7 @@ while true; do
   "Troubleshooting")
     osascript -e 'display dialog "Common fixes:\n• Re-run this script if Java errors appear\n• Go to Finder->Documents->MCSEHS and delete all Java folders\n• Certain Minecraft versions require certain Java versions, make sure your selecting the right minecraft version you want to play when booting up. You need to close ATLauncher and choose another java version if your trying a different instance on a different minecraft version." buttons {"Back"} with title "Troubleshooting"'
     ;;
-  "Set Up") break ;;
+  "Launch") break ;;
   esac
 done
 for java_version in 8 17 21 25; do install_java $java_version; done
