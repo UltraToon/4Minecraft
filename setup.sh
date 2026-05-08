@@ -6,10 +6,9 @@ LAUNCHER_DIR="$MCDIR/ATLauncher"
 install_java() {
   local JAVA_DIR="$MCDIR/Java$1"
   [ -d "$JAVA_DIR" ] && return
-  mkdir -p "$MCDIR"
   osascript -e "display dialog \"Installing Java $1...\nPlease wait, this may take a few minutes.\" buttons {\"OK\"} default button \"OK\" with title \"SEHS Minecraft\"" &
   local DIALOG=$!
-  mkdir -p "$JAVA_DIR"
+  mkdir -p "$JAVA_DIR" #Also creates MCDIR if it doesn't exist
   curl -L -o /tmp/java-corretto.tar.gz "https://corretto.aws/downloads/latest/amazon-corretto-${1}-aarch64-macos-jdk.tar.gz"
   tar -xzf /tmp/java-corretto.tar.gz -C "$JAVA_DIR" --strip-components=1
   rm /tmp/java-corretto.tar.gz
@@ -30,9 +29,8 @@ done
 for java_version in 8 17 21 25; do install_java $java_version; done
 
 if [[ ! -f "$LAUNCHER_DIR/ATLauncher.jar" ]]; then
-  mkdir -p "$LAUNCHER_DIR"
+  mkdir -p "$LAUNCHER_DIR/configs" #Also creates LAUNCHER_DIR if it doesn't exist
   curl -L -o "$LAUNCHER_DIR/ATLauncher.jar" "$(curl -s https://api.github.com/repos/ATLauncher/ATLauncher/releases/latest | grep -o 'https://[^"]*\.jar')"
-  mkdir -p "$LAUNCHER_DIR/configs"
   cat >"$LAUNCHER_DIR/configs/ATLauncher.json" <<EOF
 {
   "firstTimeRun": false,
@@ -54,10 +52,11 @@ fi
 
 JAVA_CHOICE=$(osascript -e 'choose from list {"Minecraft 26.1+ (Java 25)", "Minecraft 1.20.5+ (Java 21)", "Minecraft 1.17–1.20.4 (Java 17)", "Minecraft 1.16.5 and below (Java 8)"} with title "SEHS Minecraft" with prompt "Which Minecraft version are you playing?" OK button name "Continue" cancel button name "Cancel"')
 [[ "$JAVA_CHOICE" == "false" ]] && exit 0
-for v in 25 21 17 8; do
-  [[ "$JAVA_CHOICE" == *"Java $v"* ]] && JAVA_HOME="$MCDIR/Java$v/Contents/Home" && break
+for java_version in 25 21 17 8; do
+  [[ "$JAVA_CHOICE" == *"Java $java_version"* ]] && JAVA_HOME="$MCDIR/Java$java_version/Contents/Home" && break
 done
 sed -i '' "s|\"javaPath\":.*|\"javaPath\": \"$JAVA_HOME\",|" "$LAUNCHER_DIR/configs/ATLauncher.json"
+
 pkill -f "ATLauncher.jar" 2>/dev/null || true
 cd "$LAUNCHER_DIR"
 "$MCDIR/Java21/Contents/Home/bin/java" -jar "$LAUNCHER_DIR/ATLauncher.jar"
