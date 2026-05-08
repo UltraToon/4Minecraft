@@ -23,14 +23,20 @@ install_java() {
 
 INSTALL_JAVA=$(osascript -e 'button returned of (display dialog "Do you want to install Java?\nNOTE: Required atleast one for first time!" buttons {"No", "Yes"} default button "Yes")')
 if [[ "$INSTALL_JAVA" = "Yes" ]]; then
-CHOICES=$(osascript -e 'choose from list {"Java 8","Java 17","Java 21","Java 26"} with title "Java Installer" with prompt "Select versions to install:" with multiple selections allowed OK button name "Install" cancel button name "Cancel"')
-[[ "$CHOICES" == "false" ]] && exit 0
-for v in 8 17 21 26; do
-  [[ "$CHOICES" == *"Java $v"* ]] && install_java $v
-done
+  JAVA_CHOICE=$(osascript -e 'choose from list {"Java 8 (Minecraft 1.16.5 and below)", "Java 17 (Minecraft 1.17 – 1.20.4)", "Java 21 (Minecraft 1.20.5+)", "Java 26 (Minecraft 26.1+)", "Install All"} with title "Java Installer" with prompt "Select a Java version for Minecraft:" OK button name "Install" cancel button name "Cancel"')
+  case "$JAVA_CHOICE" in
+    *"Java 8"*) install_java 8 ;;
+    *"Java 17"*)  install_java 17 ;;
+    *"Java 21"*)  install_java 21 ;;
+    *"Java 26"*)  install_java 26 ;;
+    *"Install All"*) install_java 8; install_java 17; install_java 21 ; install_java 26 ;;
+    *) ;;
+  esac
+
+  [ "$JAVA_CHOICE" != "false" ] && osascript -e 'display notification "Java installation complete!" with title "Java Installer"'
 fi
 
-if [[ ! -d "$LAUNCHER_DIR" ]]; then
+if [[ ! -f "$LAUNCHER_DIR/ATLauncher.jar" ]]; then
   mkdir -p "$LAUNCHER_DIR"
   curl -L -o "$LAUNCHER_DIR/ATLauncher.jar" "$(curl -s https://api.github.com/repos/ATLauncher/ATLauncher/releases/latest | grep -o 'https://[^"]*\.jar')"
 fi
@@ -44,3 +50,6 @@ for VER in 26 21 17 8; do
     break
   fi
 done
+
+osascript -e 'display dialog "No Java installed. Please re-run and install at least one version." buttons {"OK"} with title "Java Required"'
+exit 1
