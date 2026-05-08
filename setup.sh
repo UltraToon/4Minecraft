@@ -18,7 +18,8 @@ while true; do
   ACTION=$(osascript -e 'button returned of (display dialog "Welcome to Minecraft @ SEHS\nClick Set Up to install Java and launch ATLauncher." buttons {"Info", "Troubleshooting", "Set Up"} default button "Set Up" with title "SEHS Minecraft")')
   case "$ACTION" in
   "Info")
-      osascript -e 'display dialog "ATLauncher lets you create and manage Minecraft instances.\n\nGetting started:\n• Sign in via Accounts tab with your Microsoft account\n• Go to Instances and click Add Instance\n• Pick a version or modpack and click Install\n• Hit Play when done\n\nEach instance is separate, great for different modpacks or versions. When using a version, you can install individual mods to it, depending on the modloader/version" buttons {"Back"} with title "Info"' ;;
+    osascript -e 'display dialog "ATLauncher lets you create and manage Minecraft instances.\n\nGetting started:\n• Sign in via Accounts tab with your Microsoft account\n• Go to Instances and click Add Instance\n• Pick a version or modpack and click Install\n• Hit Play when done\n\nEach instance is separate, great for different modpacks or versions. When using a version, you can install individual mods to it, depending on the modloader/version" buttons {"Back"} with title "Info"'
+    ;;
   "Troubleshooting")
     osascript -e 'display dialog "Common fixes:\n• Re-run this script if Java errors appear\n• Go to Finder->Documents->MCSEHS and delete all Java folders\n• Certain Minecraft versions require certain Java versions, make sure your selecting the right minecraft version you want to play when booting up. You need to close ATLauncher and choose another option if your trying a different instance on a different minecraft version." buttons {"Back"} with title "Troubleshooting"'
     ;;
