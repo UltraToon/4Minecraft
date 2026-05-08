@@ -19,8 +19,8 @@ any_java_installed() {
   for v in 8 17 21 26; do [ -f "$JAVA_BASE/Java$v/Contents/Home/bin/java" ] && return 0; done; return 1
 }
 
-if ! any_java_installed || [[ "$(osascript -e 'button returned of (display dialog "Install more Java versions (for different minecraft versions)?" buttons {"No","Yes"} default button "Yes")')" == "Yes" ]]; then
-  JAVA_CHOICE=$(osascript -e 'choose from list {"Java 8 (Minecraft 1.16.5 and below)", "Java 17 (Minecraft 1.17 – 1.20.4)", "Java 21 (Minecraft 1.20.5+)", "Java 26 (Minecraft 26.1+)", "Install All"} with title "Java Installer" with prompt "Select a Java version for Minecraft:" OK button name "Install" cancel button name "Cancel"')
+if ! any_java_installed || [[ "$(osascript -e 'button returned of (display dialog "Install more Java versions?" buttons {"No","Yes"} default button "Yes")')" == "Yes" ]]; then
+  JAVA_CHOICE=$(osascript -e 'choose from list {"Install All Java Versions", "Java 26 (Minecraft 26.1+)", "Java 21 (Minecraft 1.20.5+)", "Java 17 (Minecraft 1.17 – 1.20.4)", "Java 8 (Minecraft 1.16.5 and below)"} with title "Java Installer" with prompt "Select a Java version for Minecraft" OK button name "Install (Takes a minute)" cancel button name "Cancel"')
   case "$JAVA_CHOICE" in
     *"Java 8"*) install_java 8 ;;
     *"Java 17"*)  install_java 17 ;;
