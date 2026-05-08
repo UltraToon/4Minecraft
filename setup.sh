@@ -59,5 +59,5 @@ sed -i '' "s|\"javaPath\":.*|\"javaPath\": \"$JAVA_HOME\",|" "$LAUNCHER_DIR/conf
 
 pkill -f "ATLauncher.jar" 2>/dev/null || true
 cd "$LAUNCHER_DIR"
-"$MCDIR/Java21/Contents/Home/bin/java" -jar "$LAUNCHER_DIR/ATLauncher.jar"
+"$MCDIR/Java21/Contents/Home/bin/java" -jar "$LAUNCHER_DIR/ATLauncher.jar" || osascript -e 'display dialog "ATLauncher failed to start.\nTry re-running the script." buttons {"OK"} with title "SEHS Minecraft"'
 # Using Java LTS versions for launcher bootup, this is the latest as of now.
