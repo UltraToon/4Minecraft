@@ -2,7 +2,6 @@
 set -euo pipefail
 LAUNCHER_DIR="$HOME/Documents/ATLauncher"
 JAVA_BASE="$HOME/Documents"
-#FLAG="$HOME/.geometrysetup"
 
 install_java() {
   local JAVA_VER=$1
@@ -16,13 +15,11 @@ install_java() {
   fi
 }
 
-#if [ ! -f "$FLAG" ]; then
-#    osascript -e 'display dialog "This tool will get you set up with Minecraft in just a few steps\nATLauncher is used, being a launcher for modpacks/instances that you can customize.\nYou need to sign in with your minecraft account on it, and select the custom Java version." buttons {"Continue"} default button "Continue" with title "Intro to Setup"'
-#    touch "$FLAG"
-#fi
+any_java_installed() {
+  for v in 8 17 21 26; do [ -f "$JAVA_BASE/Java$v/Contents/Home/bin/java" ] && return 0; done; return 1
+}
 
-INSTALL_JAVA=$(osascript -e 'button returned of (display dialog "Do you want to install Java?\nNOTE: Required atleast one for first time!" buttons {"No", "Yes"} default button "Yes")')
-if [[ "$INSTALL_JAVA" = "Yes" ]]; then
+if ! any_java_installed || [[ "$(osascript -e 'button returned of (display dialog "Install more Java versions (for different minecraft versions)?" buttons {"No","Yes"} default button "Yes")')" == "Yes" ]]; then
   JAVA_CHOICE=$(osascript -e 'choose from list {"Java 8 (Minecraft 1.16.5 and below)", "Java 17 (Minecraft 1.17 – 1.20.4)", "Java 21 (Minecraft 1.20.5+)", "Java 26 (Minecraft 26.1+)", "Install All"} with title "Java Installer" with prompt "Select a Java version for Minecraft:" OK button name "Install" cancel button name "Cancel"')
   case "$JAVA_CHOICE" in
     *"Java 8"*) install_java 8 ;;
@@ -50,6 +47,3 @@ for VER in 26 21 17 8; do
     break
   fi
 done
-
-osascript -e 'display dialog "No Java installed. Please re-run and install at least one version." buttons {"OK"} with title "Java Required"'
-exit 1
