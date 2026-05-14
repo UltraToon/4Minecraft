@@ -4,52 +4,66 @@ set -euo pipefail
 MCDIR="$HOME/Documents/MCSEHS"
 LAUNCHER_DIR="$MCDIR/ATLauncher"
 
-# Detect CPU architecture so Corretto downloads the right build
-[[ "$(uname -m)" == "arm64" ]] && CORRETTO_ARCH="aarch64" || CORRETTO_ARCH="x86_64"
+# Apple Silicon = aarch64, Intel = x86_64 — Corretto ships separate tarballs for each
+[[ "$(uname -m)" == "arm64" ]] && ARCH="aarch64" || ARCH="x86_64"
 
-# Downloads and installs Amazon Corretto for the given major version.
-# Skips silently if already installed.
+# Downloads the correct Corretto tarball. Skips silently if already installed.
 install_java() {
-  local JAVA_DIR="$MCDIR/Java$1"
-  [ -d "$JAVA_DIR" ] && return
-  osascript -e "display dialog \"Downloading Java $1...\nThis one-time setup may take a few minutes.\" buttons {\"OK\"} default button \"OK\" with title \"SEHS Minecraft\"" &
-  local DIALOG=$!
-  mkdir -p "$JAVA_DIR"
-  curl -L -o /tmp/java-corretto.tar.gz \
-    "https://corretto.aws/downloads/latest/amazon-corretto-${1}-${CORRETTO_ARCH}-macos-jdk.tar.gz" \
-    || { kill "$DIALOG" 2>/dev/null
-         osascript -e "display dialog \"Failed to download Java $1.\nCheck your internet connection and try again.\" buttons {\"OK\"} with title \"SEHS Minecraft\""
-         exit 1; }
-  tar -xzf /tmp/java-corretto.tar.gz -C "$JAVA_DIR" --strip-components=1
-  rm /tmp/java-corretto.tar.gz
-  kill "$DIALOG" 2>/dev/null || true
+  local ver="$1" dir="$MCDIR/Java${1}"
+  [[ -d "$dir" ]] && return
+
+  osascript -e "display dialog \"Downloading Java ${ver}…\nThis one-time setup may take a minute.\" \
+    buttons {\"OK\"} default button \"OK\" with title \"SEHS Minecraft\"" &>/dev/null &
+  local dlg=$!
+
+  mkdir -p "$dir"
+  curl -fsSL -o /tmp/corretto.tar.gz \
+    "https://corretto.aws/downloads/latest/amazon-corretto-${ver}-${ARCH}-macos-jdk.tar.gz" || {
+      kill "$dlg" 2>/dev/null || true
+      osascript -e "display dialog \"Failed to download Java ${ver}.\nCheck your connection and try again.\" \
+        buttons {\"OK\"} with title \"SEHS Minecraft\"" &>/dev/null
+      exit 1
+  }
+  tar -xzf /tmp/corretto.tar.gz -C "$dir" --strip-components=1
+  rm /tmp/corretto.tar.gz
+  kill "$dlg" 2>/dev/null || true
 }
 
-# Downloads ATLauncher and writes the default config. Skips if already installed.
+# Downloads ATLauncher and writes an initial config pointing to our Java wrapper.
+# Skips silently if already installed.
 install_launcher() {
   [[ -f "$LAUNCHER_DIR/ATLauncher.jar" ]] && return
-  osascript -e 'display dialog "Downloading ATLauncher...\nThis is a one-time setup." buttons {"OK"} default button "OK" with title "SEHS Minecraft"' &
-  local DIALOG=$!
+
+  osascript -e 'display dialog "Downloading ATLauncher…\nThis is a one-time setup." \
+    buttons {"OK"} default button "OK" with title "SEHS Minecraft"' &>/dev/null &
+  local dlg=$!
+
   mkdir -p "$LAUNCHER_DIR/configs"
-  # Fetch the .jar download URL from the latest GitHub release
-  local JAR_URL
-  JAR_URL=$(curl -s https://api.github.com/repos/ATLauncher/ATLauncher/releases/latest \
-    | grep -o 'https://[^"]*\.jar') \
-    || { kill "$DIALOG" 2>/dev/null
-         osascript -e 'display dialog "Could not fetch ATLauncher.\nCheck your internet connection." buttons {"OK"} with title "SEHS Minecraft"'
-         exit 1; }
-  curl -L -o "$LAUNCHER_DIR/ATLauncher.jar" "$JAR_URL" \
-    || { kill "$DIALOG" 2>/dev/null
-         osascript -e 'display dialog "Failed to download ATLauncher.\nCheck your internet and try again." buttons {"OK"} with title "SEHS Minecraft"'
-         exit 1; }
-  # Write default config (firstTimeRun:false skips ATLauncher's own setup wizard)
-  cat >"$LAUNCHER_DIR/configs/ATLauncher.json" <<EOF
+  local jar_url
+  jar_url=$(curl -fsSL https://api.github.com/repos/ATLauncher/ATLauncher/releases/latest \
+    | grep -o 'https://[^"]*\.jar' | head -1) || {
+      kill "$dlg" 2>/dev/null || true
+      osascript -e 'display dialog "Could not fetch ATLauncher.\nCheck your connection." \
+        buttons {"OK"} with title "SEHS Minecraft"' &>/dev/null
+      exit 1
+  }
+  curl -fsSL -o "$LAUNCHER_DIR/ATLauncher.jar" "$jar_url" || {
+    kill "$dlg" 2>/dev/null || true
+    osascript -e 'display dialog "Failed to download ATLauncher.\nCheck your connection." \
+      buttons {"OK"} with title "SEHS Minecraft"' &>/dev/null
+    exit 1
+  }
+
+  # javaInstallLocation is a no-op on macOS (no JavaFinder branch in ATLauncher source).
+  # Mojang bundled runtimes are blocked on managed school Macs.
+  # javaPath points to our wrapper, which auto-routes per instance at launch time.
+  cat > "$LAUNCHER_DIR/configs/ATLauncher.json" << EOF
 {
   "firstTimeRun": false,
   "selectedTabOnStartup": 2,
   "useJavaProvidedByMinecraft": false,
-  "usingCustomJavaPath": false,
-  "javaInstallLocation": "$MCDIR",
+  "usingCustomJavaPath": true,
+  "javaPath": "$MCDIR/JavaWrapper/Contents/Home",
   "keepLauncherOpen": true,
   "enableConsole": false,
   "useRecycleBin": true,
@@ -60,34 +74,89 @@ install_launcher() {
   "defaultInstanceSorting": "BY_NAME"
 }
 EOF
-  kill "$DIALOG" 2>/dev/null || true
+  kill "$dlg" 2>/dev/null || true
 }
 
-# ── Welcome menu ──────────────────────────────────────────────────────────────
+# Writes a thin Java shim that ATLauncher calls for every instance launch.
+# The shim reads instance.json to find the required Java version, then exec's
+# into the correct Corretto — leaving zero memory/CPU overhead while playing.
+create_wrapper() {
+  local bin="$MCDIR/JavaWrapper/Contents/Home/bin"
+  mkdir -p "$bin"
+
+  # Note: single-quoted heredoc — no variable expansion, $HOME resolves at runtime
+  cat > "$bin/java" << 'WRAPPER'
+#!/bin/bash
+MCDIR="$HOME/Documents/MCSEHS"
+JAVA_VER="21"  # safe default for ATLauncher UI and unknown instances
+
+# 1. Find the instance directory from ATLauncher's launch arguments
+for arg in "$@"; do
+  if [[ "$arg" == *"/ATLauncher/instances/"* ]]; then
+    tmp="${arg#*/ATLauncher/instances/}"
+    dir="$MCDIR/ATLauncher/instances/${tmp%%/*}"
+    [[ -f "$dir/instance.json" ]] && INSTANCE_JSON="$dir/instance.json" && break
+  fi
+done
+
+# 2. Pick the right Corretto using instance.json (ATLauncher's MinecraftVersion data)
+#    Strategy: read javaVersion.majorVersion (Mojang's own spec, present for MC 1.17+)
+#              and fall back to the "id" version string for older instances (pre-1.17 = Java 8)
+if [[ -n "${INSTANCE_JSON:-}" ]]; then
+  json=$(< "$INSTANCE_JSON")
+
+  if [[ "$json" =~ \"majorVersion\"[[:space:]]*:[[:space:]]*([0-9]+) ]]; then
+    # Modern MC (1.17+): Mojang tells us exactly which Java major version is required.
+    # Round up to the nearest Corretto we have installed (8, 17, 21, 25).
+    req="${BASH_REMATCH[1]}"
+    case "$req" in
+      8|[1-9])   JAVA_VER="8"  ;;
+      1[0-6])    JAVA_VER="8"  ;;
+      17|1[89])  JAVA_VER="17" ;;
+      2[01])     JAVA_VER="21" ;;
+      *)         JAVA_VER="25" ;;
+    esac
+  elif [[ "$json" =~ \"id\"[[:space:]]*:[[:space:]]*\"1\.([0-9]+) ]]; then
+    # Pre-1.17: no javaVersion field — use the "id" minor version to determine Java 8
+    minor="${BASH_REMATCH[1]}"
+    (( minor < 17 )) && JAVA_VER="8" || JAVA_VER="17"
+  fi
+fi
+
+# 3. Resolve and exec — replace this process entirely (zero overhead while playing)
+real="$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
+[[ -f "$real" ]] || real="$MCDIR/Java21/Contents/Home/bin/java"
+exec "$real" "$@"
+WRAPPER
+
+  chmod +x "$bin/java"
+}
+
+# ── Welcome menu ───────────────────────────────────────────────────────────────
 while true; do
-  ACTION=$(osascript -e 'button returned of (display dialog "Welcome to Minecraft @ SEHS\nClick Launch to launch ATLauncher for minecraft." buttons {"Info", "Troubleshooting", "Launch"} default button "Launch" with title "SEHS Minecraft")')
+  ACTION=$(osascript -e 'button returned of (display dialog "Welcome to Minecraft @ SEHS\n\nJava is managed automatically — just hit Launch." \
+    buttons {"Info", "Troubleshooting", "Launch"} default button "Launch" with title "SEHS Minecraft")')
   case "$ACTION" in
-  "Info")
-    osascript -e 'display dialog "ATLauncher lets you create and manage Minecraft instances.\n\nGetting started:\n• Sign in via Accounts tab with your Microsoft account\n• Go to Instances and click Add Instance\n• Pick a version or modpack and click Install\n• Hit Play when done\n\nEach instance is separate, great for different modpacks or versions. When using a version, you can install individual mods to it, depending on the modloader/version" buttons {"Back"} with title "Info"'
-    ;;
-  "Troubleshooting")
-    osascript -e 'display dialog "Common fixes:\n• Re-run this script if Java errors appear\n• Go to Finder->Documents->MCSEHS and delete all Java folders, then re-run\n• ATLauncher automatically picks the correct Java version for each instance — you do not need to choose manually" buttons {"Back"} with title "Troubleshooting"'
-    ;;
-  "Launch") break ;;
+    Info)
+      osascript -e 'display dialog "ATLauncher lets you create and manage Minecraft instances.\n\nGetting started:\n• Sign in via the Accounts tab with your Microsoft account\n• Go to Instances → Add Instance\n• Pick a version or modpack and click Install\n• Hit Play!\n\nEach instance is isolated — perfect for different modpacks or versions.\nJava is selected automatically for each instance you launch." \
+        buttons {"Back"} with title "Info"' &>/dev/null
+      ;;
+    Troubleshooting)
+      osascript -e 'display dialog "Common fixes:\n• Re-run this script if Java errors appear\n• To reset Java, delete ~/Documents/MCSEHS/Java* folders and re-run\n• Java is chosen automatically per instance — no action needed\n• If ATLauncher warns about a Java mismatch, click Yes/Continue (the wrapper handles it)" \
+        buttons {"Back"} with title "Troubleshooting"' &>/dev/null
+      ;;
+    Launch) break ;;
   esac
 done
 
-# ── Install all Java versions (each skips silently if already present) ────────
-for java_version in 8 17 21 25; do
-  install_java "$java_version"
-done
-
-# ── Download ATLauncher if not already present ────────────────────────────────
+# ── Setup (all operations skip silently if already done) ──────────────────────
+for ver in 8 17 21 25; do install_java "$ver"; done
+create_wrapper   # always re-written to pick up any script updates
 install_launcher
 
+# ── Launch ─────────────────────────────────────────────────────────────────────
 pkill -f "ATLauncher.jar" 2>/dev/null || true
 cd "$LAUNCHER_DIR"
-# ATLauncher boots on Java 21 (LTS). Per-instance Java is auto-selected by ATLauncher
-# using the javaInstallLocation set in configs/ATLauncher.json, which points to $MCDIR.
-"$MCDIR/Java21/Contents/Home/bin/java" -jar "$LAUNCHER_DIR/ATLauncher.jar" \
-  || osascript -e 'display dialog "ATLauncher failed to start.\nTry re-running the script." buttons {"OK"} with title "SEHS Minecraft"'
+"$MCDIR/Java21/Contents/Home/bin/java" -jar ATLauncher.jar \
+  || osascript -e 'display dialog "ATLauncher failed to start.\nTry re-running the script." \
+      buttons {"OK"} with title "SEHS Minecraft"' &>/dev/null
