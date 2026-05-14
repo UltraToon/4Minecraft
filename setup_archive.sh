@@ -48,8 +48,8 @@ install_launcher() {
   "firstTimeRun": false,
   "selectedTabOnStartup": 2,
   "useJavaProvidedByMinecraft": false,
-  "usingCustomJavaPath": true,
-  "javaPath": "$MCDIR/Java21/Contents/Home",
+  "usingCustomJavaPath": false,
+  "javaInstallLocation": "$MCDIR",
   "keepLauncherOpen": true,
   "enableConsole": false,
   "useRecycleBin": true,
@@ -71,53 +71,23 @@ while true; do
     osascript -e 'display dialog "ATLauncher lets you create and manage Minecraft instances.\n\nGetting started:\n• Sign in via Accounts tab with your Microsoft account\n• Go to Instances and click Add Instance\n• Pick a version or modpack and click Install\n• Hit Play when done\n\nEach instance is separate, great for different modpacks or versions. When using a version, you can install individual mods to it, depending on the modloader/version" buttons {"Back"} with title "Info"'
     ;;
   "Troubleshooting")
-    osascript -e 'display dialog "Common fixes:\n• Re-run this script if Java errors appear\n• Go to Finder->Documents->MCSEHS and delete all Java folders\n• Certain Minecraft versions require certain Java versions, make sure your selecting the right minecraft version you want to play when booting up. You need to close ATLauncher and choose another java version if your trying a different instance on a different minecraft version." buttons {"Back"} with title "Troubleshooting"'
+    osascript -e 'display dialog "Common fixes:\n• Re-run this script if Java errors appear\n• Go to Finder->Documents->MCSEHS and delete all Java folders, then re-run\n• ATLauncher automatically picks the correct Java version for each instance — you do not need to choose manually" buttons {"Back"} with title "Troubleshooting"'
     ;;
   "Launch") break ;;
   esac
 done
 
-# ── Java version picker ───────────────────────────────────────────────────────
-# Load the last-used choice (if any) to pre-select it in the list
-LAST_CHOICE=""
-[ -f "$MCDIR/.last_java" ] && LAST_CHOICE=$(cat "$MCDIR/.last_java")
-
-# Use a heredoc so we can conditionally set default items
-JAVA_CHOICE=$(osascript <<APPLESCRIPT
-set lastChoice to "$LAST_CHOICE"
-set allChoices to {"Minecraft 26.1+ (Java 25)", "Minecraft 1.20.5+ (Java 21)", "Minecraft 1.17-1.20.4 (Java 17)", "Minecraft 1.16.5 and below (Java 8)"}
-if lastChoice is "" then
-  choose from list allChoices with title "SEHS Minecraft" with prompt "Which Minecraft version are you playing?" OK button name "Continue" cancel button name "Cancel"
-else
-  choose from list allChoices with title "SEHS Minecraft" with prompt "Which Minecraft version are you playing?" default items {lastChoice} OK button name "Continue" cancel button name "Cancel"
-end if
-APPLESCRIPT
-)
-[[ "$JAVA_CHOICE" == "false" ]] && exit 0
-
-# ── Download only what is needed ──────────────────────────────────────────────
-CHOSEN_JAVA="21"  # safe fallback
-for java_version in 25 21 17 8; do
-  [[ "$JAVA_CHOICE" == *"Java $java_version"* ]] && CHOSEN_JAVA="$java_version" && break
+# ── Install all Java versions (each skips silently if already present) ────────
+for java_version in 8 17 21 25; do
+  install_java "$java_version"
 done
 
-# Java 21 is always required — ATLauncher itself runs on it (line 62)
-install_java 21
-# Only fetch the extra version if the user needs something other than 21
-[[ "$CHOSEN_JAVA" != "21" ]] && install_java "$CHOSEN_JAVA"
-
-# Download ATLauncher if not already present
+# ── Download ATLauncher if not already present ────────────────────────────────
 install_launcher
-
-# Remember this choice for next run (MCDIR guaranteed to exist by now)
-echo "$JAVA_CHOICE" > "$MCDIR/.last_java"
-
-# ── Update config and launch ──────────────────────────────────────────────────
-JAVA_HOME="$MCDIR/Java${CHOSEN_JAVA}/Contents/Home"
-sed -i '' "s|\"javaPath\":.*|\"javaPath\": \"$JAVA_HOME\",|" "$LAUNCHER_DIR/configs/ATLauncher.json"
 
 pkill -f "ATLauncher.jar" 2>/dev/null || true
 cd "$LAUNCHER_DIR"
-# ATLauncher always boots on Java 21 (LTS). The chosen Java is used per-instance inside ATLauncher.
+# ATLauncher boots on Java 21 (LTS). Per-instance Java is auto-selected by ATLauncher
+# using the javaInstallLocation set in configs/ATLauncher.json, which points to $MCDIR.
 "$MCDIR/Java21/Contents/Home/bin/java" -jar "$LAUNCHER_DIR/ATLauncher.jar" \
   || osascript -e 'display dialog "ATLauncher failed to start.\nTry re-running the script." buttons {"OK"} with title "SEHS Minecraft"'
