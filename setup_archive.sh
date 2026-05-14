@@ -9,7 +9,7 @@ LAUNCHER_DIR="$MCDIR/ATLauncher"
 
 # Downloads the correct Corretto tarball. Skips silently if already installed.
 install_java() {
-  local ver="$1" dir="$MCDIR/Java${1}"
+  local ver="$1" dir="$MCDIR/Java${ver}"
   [[ -d "$dir" ]] && return
 
   osascript -e "display dialog \"Downloading Java ${ver}…\nThis one-time setup may take a minute.\" \
@@ -41,7 +41,7 @@ install_launcher() {
   mkdir -p "$LAUNCHER_DIR/configs"
   local jar_url
   jar_url=$(curl -fsSL https://api.github.com/repos/ATLauncher/ATLauncher/releases/latest \
-    | grep -o 'https://[^"]*\.jar' | head -1) || {
+    | grep -o 'https://[^"]*ATLauncher[^"]*\.jar' | head -1) || {
       kill "$dlg" 2>/dev/null || true
       osascript -e 'display dialog "Could not fetch ATLauncher.\nCheck your connection." \
         buttons {"OK"} with title "SEHS Minecraft"' &>/dev/null
@@ -84,46 +84,30 @@ create_wrapper() {
   local bin="$MCDIR/JavaWrapper/Contents/Home/bin"
   mkdir -p "$bin"
 
-  # Note: single-quoted heredoc — no variable expansion, $HOME resolves at runtime
+
   cat > "$bin/java" << 'WRAPPER'
 #!/bin/bash
 MCDIR="$HOME/Documents/MCSEHS"
-JAVA_VER="21"  # safe default for ATLauncher UI and unknown instances
+JAVA_VER="21"  # default: ATLauncher UI calls java too, 21 is correct for that
 
-# 1. Find the instance directory from ATLauncher's launch arguments
 for arg in "$@"; do
-  if [[ "$arg" == *"/ATLauncher/instances/"* ]]; then
-    tmp="${arg#*/ATLauncher/instances/}"
-    dir="$MCDIR/ATLauncher/instances/${tmp%%/*}"
-    [[ -f "$dir/instance.json" ]] && INSTANCE_JSON="$dir/instance.json" && break
+  [[ "$arg" != *"/ATLauncher/instances/"* ]] && continue
+  tmp="${arg#*/ATLauncher/instances/}"
+  json_file="$MCDIR/ATLauncher/instances/${tmp%%/*}/instance.json"
+
+  # No majorVersion = pre-1.17, always Java 8
+  JAVA_VER="8"
+
+  if [[ -f "$json_file" ]] && [[ $(< "$json_file") =~ \"majorVersion\"[[:space:]]*:[[:space:]]*([0-9]+) ]]; then
+    req="${BASH_REMATCH[1]}"
+    if   (( req >= 25 )); then JAVA_VER="25"
+    elif (( req >= 21 )); then JAVA_VER="21"
+    elif (( req >= 17 )); then JAVA_VER="17"
+    fi
   fi
+  break
 done
 
-# 2. Pick the right Corretto using instance.json (ATLauncher's MinecraftVersion data)
-#    Strategy: read javaVersion.majorVersion (Mojang's own spec, present for MC 1.17+)
-#              and fall back to the "id" version string for older instances (pre-1.17 = Java 8)
-if [[ -n "${INSTANCE_JSON:-}" ]]; then
-  json=$(< "$INSTANCE_JSON")
-
-  if [[ "$json" =~ \"majorVersion\"[[:space:]]*:[[:space:]]*([0-9]+) ]]; then
-    # Modern MC (1.17+): Mojang tells us exactly which Java major version is required.
-    # Round up to the nearest Corretto we have installed (8, 17, 21, 25).
-    req="${BASH_REMATCH[1]}"
-    case "$req" in
-      8|[1-9])   JAVA_VER="8"  ;;
-      1[0-6])    JAVA_VER="8"  ;;
-      17|1[89])  JAVA_VER="17" ;;
-      2[01])     JAVA_VER="21" ;;
-      *)         JAVA_VER="25" ;;
-    esac
-  elif [[ "$json" =~ \"id\"[[:space:]]*:[[:space:]]*\"1\.([0-9]+) ]]; then
-    # Pre-1.17: no javaVersion field — use the "id" minor version to determine Java 8
-    minor="${BASH_REMATCH[1]}"
-    (( minor < 17 )) && JAVA_VER="8" || JAVA_VER="17"
-  fi
-fi
-
-# 3. Resolve and exec — replace this process entirely (zero overhead while playing)
 real="$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
 [[ -f "$real" ]] || real="$MCDIR/Java21/Contents/Home/bin/java"
 exec "$real" "$@"
@@ -151,8 +135,12 @@ done
 
 # ── Setup (all operations skip silently if already done) ──────────────────────
 for ver in 8 17 21 25; do install_java "$ver"; done
-create_wrapper   # always re-written to pick up any script updates
+create_wrapper
 install_launcher
+# Always ensure the config points to the wrapper — fixes pre-existing installs
+# that were set up before the wrapper existed, without touching any other settings
+sed -i '' "s|\"javaPath\":.*|\"javaPath\": \"$MCDIR/JavaWrapper/Contents/Home\",|" \
+  "$LAUNCHER_DIR/configs/ATLauncher.json" 2>/dev/null || true
 
 # ── Launch ─────────────────────────────────────────────────────────────────────
 pkill -f "ATLauncher.jar" 2>/dev/null || true
