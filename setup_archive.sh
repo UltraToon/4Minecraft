@@ -4,13 +4,14 @@ MCDIR="$HOME/Documents/MCSEHS"
 LAUNCHER_DIR="$MCDIR/ATLauncher"
 
 install_java() {
-  [[ "$(uname -m)" == "arm64" ]] && ARCH="aarch64" || ARCH="x64"
+  #[[ "$(uname -m)" == "arm64" ]] && ARCH="aarch64" || ARCH="x64"
   local JAVA_DIR="$MCDIR/Java$1"
   [ -d "$JAVA_DIR" ] && return
   osascript -e "display dialog \"Installing Java $1...\nThis one-time process may take a few minutes.\" buttons {\"OK\"} default button \"OK\" with title \"Java Installer\"" &
   local DIALOG=$!
   mkdir -p "$JAVA_DIR" #Also creates MCDIR if it doesn't exist
-  curl -fsSL -o /tmp/java-corretto.tar.gz "https://corretto.aws/downloads/latest/amazon-corretto-${1}-${ARCH}-macos-jdk.tar.gz"
+  #curl -fsSL -o /tmp/java-corretto.tar.gz "https://corretto.aws/downloads/latest/amazon-corretto-${1}-${ARCH}-macos-jdk.tar.gz"
+  curl -fsSL -o /tmp/java-corretto.tar.gz "https://corretto.aws/downloads/latest/amazon-corretto-${1}-aarch64-macos-jdk.tar.gz"
   tar -xzf /tmp/java-corretto.tar.gz -C "$JAVA_DIR" --strip-components=1
   rm /tmp/java-corretto.tar.gz
   kill $DIALOG 2>/dev/null
