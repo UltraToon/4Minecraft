@@ -6,10 +6,14 @@ LAUNCHER_DIR="$MCDIR/ATLauncher"
 install_java() {
   local JAVA_DIR="$MCDIR/Java$1"
   [ -d "$JAVA_DIR" ] && return
+  local ARCH
   [[ "$(uname -m)" == "arm64" ]] && ARCH="aarch64" || ARCH="x64"
   # The line below makes it so Java 8 is always x64, because MC doesnt support ARM with Java 8 on older versions. It automatically installs rosetta on ARM macs for compatibility with x64 Java 8
-  [[ "$1" == "8" ]] && { ARCH="x64"; softwareupdate --install-rosetta --agree-to-license 2>/dev/null || true; }
-  osascript -e "display dialog \"Installing Java $1...\nThis one-time process may take a few minutes.\" buttons {\"OK\"} default button \"OK\" with title \"Java Installer\"" &
+  [[ "$1" == "8" ]] && {
+    ARCH="x64"
+    softwareupdate --install-rosetta --agree-to-license 2>/dev/null || true
+  }
+  osascript -e "display dialog \"Installing Java $1...\nThis one-time process takes a moment.\" buttons {\"OK\"} default button \"OK\" with title \"Java Installer\"" &
   local DIALOG=$!
   mkdir -p "$JAVA_DIR" #Also creates MCDIR if it doesn't exist
   curl -fsSL -o /tmp/java-corretto.tar.gz "https://corretto.aws/downloads/latest/amazon-corretto-${1}-${ARCH}-macos-jdk.tar.gz"
@@ -22,7 +26,7 @@ install_launcher() {
   [[ -f "$LAUNCHER_DIR/ATLauncher.jar" ]] && return
   mkdir -p "$LAUNCHER_DIR/configs" #Also creates LAUNCHER_DIR if it doesn't exist
   curl -fsSL -o "$LAUNCHER_DIR/ATLauncher.jar" "$(curl -s https://api.github.com/repos/ATLauncher/ATLauncher/releases/latest | grep -o 'https://[^"]*\.jar')"
-  cat >"$LAUNCHER_DIR/configs/ATLauncher.json" <<EOF
+  cat >"$LAUNCHER_DIR/configs/ATLauncher.json" <<'SETTINGS'
 {
   "firstTimeRun": false,
   "selectedTabOnStartup": 2,
@@ -38,7 +42,7 @@ install_launcher() {
   "backupMode": "NORMAL",
   "defaultInstanceSorting": "BY_NAME"
 }
-EOF
+SETTINGS
 }
 
 # Writes a thin Java shim that ATLauncher calls for every instance launch.
@@ -51,21 +55,16 @@ create_wrapper() {
   cat >"$bin/java" <<'WRAPPER'
 #!/bin/bash
 MCDIR="$HOME/Documents/MCSEHS"
-JAVA_VER=21  # default: ATLauncher UI calls java for itself, 21 is fine
-
+JAVA_VER=21  # default version if nothing is found
 for arg in "$@"; do
-  [[ "$arg" != *"/ATLauncher/instances/"* ]] && continue
+  [[ "$arg" == *"/ATLauncher/instances/"* ]] || continue
   instance="${arg#*/ATLauncher/instances/}"
   json="$MCDIR/ATLauncher/instances/${instance%%/*}/instance.json"
-  # Default to Java 8 for legacy instances with no majorVersion (pre-1.17)
-  JAVA_VER=8
-  [[ -f "$json" ]] && [[ $(< "$json") =~ \"majorVersion\"[[:space:]]*:[[:space:]]*([0-9]+) ]] && JAVA_VER="${BASH_REMATCH[1]}"
+  JAVA_VER=$(grep '"majorVersion"' "$json" | tr -dc '0-9')
   break
 done
 
-real="$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
-[[ -f "$real" ]] || real="$MCDIR/Java21/Contents/Home/bin/java"
-exec "$real" "$@"
+exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" "$@"
 WRAPPER
 
   chmod +x "$bin/java"
