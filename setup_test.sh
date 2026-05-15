@@ -22,8 +22,27 @@ install_java() {
   kill $DIALOG 2>/dev/null
 }
 
+# ATLauncher doesn't bundle ARM natives for LWJGL 1.17-1.18.2, so we have to do it ourselves. Only do this on ARM Macs, x86 can use the bundled x64 natives just fine.
+install_lwjgl_arm_natives() {
+  [[ "$(uname -m)" != "arm64" ]] && return # x86 Macs don't need this
+  local NATIVES_DIR="$MCDIR/lwjgl-arm64-natives"
+  [ -d "$NATIVES_DIR" ] && return
+  mkdir -p "$NATIVES_DIR"
+  local BASE="https://repo1.maven.org/maven2/org/lwjgl"
+  local VER="3.3.3"
+  # These are the modules 1.18.2 actually loads. Each jar is a zip containing .dylib files.
+  for module in lwjgl lwjgl-glfw lwjgl-openal lwjgl-opengl lwjgl-stb lwjgl-jemalloc lwjgl-tinyfd; do
+    curl -fsSL -o /tmp/lwjgl-native.jar \
+      "${BASE}/${module}/${VER}/${module}-${VER}-natives-macos-arm64.jar"
+    # Jars are zip files — unzip just the .dylib files directly into NATIVES_DIR
+    unzip -q -o /tmp/lwjgl-native.jar "*.dylib" -d "$NATIVES_DIR" 2>/dev/null || true
+    rm /tmp/lwjgl-native.jar
+  done
+}
+
+#"enableArmSupport": true
 install_launcher() {
-  [[ -f "$LAUNCHER_DIR/ATLauncher.jar" ]] && return
+  [[ -f "$LAUNCHER_DIR/ATLauncher.jar" && -d "$LAUNCHER_DIR/configs" ]] && return
   mkdir -p "$LAUNCHER_DIR/configs" #Also creates LAUNCHER_DIR if it doesn't exist
   curl -fsSL -o "$LAUNCHER_DIR/ATLauncher.jar" "$(curl -s https://api.github.com/repos/ATLauncher/ATLauncher/releases/latest | grep -o 'https://[^"]*\.jar')"
   cat >"$LAUNCHER_DIR/configs/ATLauncher.json" <<'SETTINGS'
@@ -56,7 +75,7 @@ create_wrapper() {
   cat >"$bin/java" <<'WRAPPER'
 #!/bin/bash
 MCDIR="$HOME/Documents/MCSEHS"
-JAVA_VER=21  # default version if nothing is found
+JAVA_VER=8  # default version if nothing is found, 8 for older modpacks that might not have a updated instance.json with majorVersion field
 for arg in "$@"; do
   [[ "$arg" == *"/ATLauncher/instances/"* ]] || continue
   instance="${arg#*/ATLauncher/instances/}"
@@ -65,32 +84,39 @@ for arg in "$@"; do
   break
 done
 
-exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" "$@"
+# 1.17-1.18.x: LWJGL 3.2.1 ships only x86_64 macOS natives. On arm64, prepend our
+# LWJGL 3.3.3 arm64 dylibs via java.library.path so the JVM finds them first.
+# 1.19+ ships natives-macos-arm64 in its own jar, so no override needed there.
+EXTRA_ARGS=()
+if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
+  NATIVES="$HOME/Documents/MCSEHS/lwjgl-arm64-natives"
+  [[ -d "$NATIVES" ]] && EXTRA_ARGS=("-Djava.library.path=$NATIVES")
+fi
+
+exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" "${EXTRA_ARGS[@]}" "$@"
 WRAPPER
 
   chmod +x "$bin/java"
 }
 
 while true; do
-  ACTION=$(osascript -e 'button returned of (display dialog "Welcome to Minecraft @ SEHS\nClick Launch to launch ATLauncher for minecraft." buttons {"Info", "Troubleshooting", "Launch"} default button "Launch" with title "SEHS Minecraft")')
+  ACTION=$(osascript -e 'button returned of (display dialog "Welcome to Minecraft @ SEHS\nClick Launch to launch ATLauncher for minecraft.\nNEW UPDATE: Click "Run troubleshooting" ONCE." buttons {"Info", "Troubleshooting", "Launch"} default button "Launch" with title "SEHS Minecraft")')
   case "$ACTION" in
   "Info")
     osascript -e 'display dialog "ATLauncher lets you create and manage Minecraft instances.\n\nGetting started:\n• Sign in via Accounts tab with your Microsoft account\n• Go to Instances and click Add Instance\n• Pick a version or modpack and click Install\n• Hit Play when done\n\nEach instance is separate, great for different modpacks or versions. When using a version, you can install individual mods to it, depending on the modloader/version" buttons {"Back"} with title "Info"'
     ;;
-  "Troubleshooting")
-    osascript -e 'display dialog "Common fixes:\n• Re-run this script if Java errors appear\n• Go to Finder->Documents->MCSEHS and delete all "Java#" folders (DO NOT DELETE ATLauncher folder YOU WILL LOSE DATA)" buttons {"Back"} with title "Troubleshooting"'
+  "Run troubleshooting")
+    rm -rf "$MCDIR/Java*"
+    rm -rf "$LAUNCHER_DIR/configs"
     ;;
   "Launch") break ;;
   esac
 done
 
 for java_version in 8 17 21 25; do install_java $java_version; done
+install_lwjgl_arm_natives
 create_wrapper
 install_launcher
-# Always ensure the config points to the wrapper — fixes pre-existing installs
-# that were set up before the wrapper existed, without touching any other settings
-sed -i '' "s|\"javaPath\":.*|\"javaPath\": \"$MCDIR/JavaWrapper/Contents/Home\",|" \
-  "$LAUNCHER_DIR/configs/ATLauncher.json" 2>/dev/null || true
 
 pkill -f "ATLauncher.jar" 2>/dev/null || true
 cd "$LAUNCHER_DIR"
