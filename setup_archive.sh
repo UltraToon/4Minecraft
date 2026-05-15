@@ -5,7 +5,6 @@ LAUNCHER_DIR="$MCDIR/ATLauncher"
 
 install_java() {
   local JAVA_DIR="$MCDIR/Java$1"
-  local ARCH=""
   [ -d "$JAVA_DIR" ] && return
   [[ "$(uname -m)" == "arm64" ]] && ARCH="aarch64" || ARCH="x64"
   # The line below makes it so Java 8 is always x64, because MC doesnt support ARM with Java 8 on older versions. It automatically installs rosetta on ARM macs for compatibility with x64 Java 8
