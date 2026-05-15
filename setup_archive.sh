@@ -4,11 +4,12 @@ MCDIR="$HOME/Documents/MCSEHS"
 LAUNCHER_DIR="$MCDIR/ATLauncher"
 
 install_java() {
+  local JAVA_DIR="$MCDIR/Java$1"
+  local ARCH=""
+  [ -d "$JAVA_DIR" ] && return
   [[ "$(uname -m)" == "arm64" ]] && ARCH="aarch64" || ARCH="x64"
   # The line below makes it so Java 8 is always x64, because MC doesnt support ARM with Java 8 on older versions. It automatically installs rosetta on ARM macs for compatibility with x64 Java 8
   [[ "$1" == "8" ]] && { ARCH="x64"; softwareupdate --install-rosetta --agree-to-license 2>/dev/null || true; }
-  local JAVA_DIR="$MCDIR/Java$1"
-  [ -d "$JAVA_DIR" ] && return
   osascript -e "display dialog \"Installing Java $1...\nThis one-time process may take a few minutes.\" buttons {\"OK\"} default button \"OK\" with title \"Java Installer\"" &
   local DIALOG=$!
   mkdir -p "$JAVA_DIR" #Also creates MCDIR if it doesn't exist
