@@ -100,12 +100,12 @@ WRAPPER
 }
 
 while true; do
-  ACTION=$(osascript -e 'button returned of (display dialog "Welcome to Minecraft @ SEHS\nClick Launch to launch ATLauncher for minecraft.\nNEW UPDATE: Click Run Troubleshooting ONCE." buttons {"Info", "Troubleshooting", "Launch"} default button "Launch" with title "SEHS Minecraft")')
+  ACTION=$(osascript -e 'button returned of (display dialog "Welcome to Minecraft @ SEHS\nClick Launch to launch ATLauncher for minecraft.\nNEW UPDATE: Click Diagnostic ONCE." buttons {"Info", "Diagnostic", "Launch"} default button "Launch" with title "SEHS Minecraft")')
   case "$ACTION" in
   "Info")
     osascript -e 'display dialog "ATLauncher lets you create and manage Minecraft instances.\n\nGetting started:\n• Sign in via Accounts tab with your Microsoft account\n• Go to Instances and click Add Instance\n• Pick a version or modpack and click Install\n• Hit Play when done\n\nEach instance is separate, great for different modpacks or versions. When using a version, you can install individual mods to it, depending on the modloader/version" buttons {"Back"} with title "Info"'
     ;;
-  "Run troubleshooting")
+  "Diagnostic")
     rm -rf "$MCDIR/Java*"
     rm -rf "$LAUNCHER_DIR/configs"
     ;;
