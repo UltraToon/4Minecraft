@@ -89,7 +89,7 @@ done
 # 1.19+ ships natives-macos-arm64 in its own jar, so no override needed there.
 EXTRA_ARGS=()
 if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
-  NATIVES="$HOME/Documents/MCSEHS/lwjgl-arm64-natives"
+  NATIVES="$MCDIR/lwjgl-arm64-natives"
   [[ -d "$NATIVES" ]] && EXTRA_ARGS=("-Djava.library.path=$NATIVES")
 fi
 
