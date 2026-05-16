@@ -2,6 +2,7 @@
 set -euo pipefail
 MCDIR="$HOME/Documents/MCSEHS"
 LAUNCHER_DIR="$MCDIR/ATLauncher"
+NATIVES_DIR="$MCDIR/lwjgl-arm64-natives"
 
 install_java() {
   local JAVA_DIR="$MCDIR/Java$1"
@@ -24,9 +25,8 @@ install_java() {
 
 # ATLauncher doesn't bundle ARM natives for LWJGL 1.17-1.18.2, so we have to do it ourselves. Only do this on ARM Macs, x86 can use the bundled x64 natives just fine.
 install_lwjgl_arm_natives() {
-  [[ "$(uname -m)" != "arm64" ]] && return # x86 Macs don't need this
-  local NATIVES_DIR="$MCDIR/lwjgl-arm64-natives"
-  [ -d "$NATIVES_DIR" ] && return
+  [[ "$(uname -m)" != "arm64" || -f "$NATIVES_DIR/liblwjgl.dylib" ]] && return # check for x86 mac so leave, otherwise also check if missing liblwgjl
+  rm -rf "$NATIVES_DIR"
   mkdir -p "$NATIVES_DIR"
   local BASE="https://repo1.maven.org/maven2/org/lwjgl"
   local VER="3.3.3"
@@ -35,7 +35,7 @@ install_lwjgl_arm_natives() {
     curl -fsSL -o /tmp/lwjgl-native.jar \
       "${BASE}/${module}/${VER}/${module}-${VER}-natives-macos-arm64.jar"
     # Jars are zip files — unzip just the .dylib files directly into NATIVES_DIR
-    unzip -q -o /tmp/lwjgl-native.jar "*.dylib" -d "$NATIVES_DIR" 2>/dev/null || true
+    unzip -q -o /tmp/lwjgl-native.jar "*.dylib" -d "$NATIVES_DIR"
     rm /tmp/lwjgl-native.jar
   done
 }
@@ -97,7 +97,7 @@ done
 EXTRA_ARGS=()
 if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
   NATIVES="$MCDIR/lwjgl-arm64-natives"
-  if [[ -d "$NATIVES" ]]; then
+  if [[ -f "$NATIVES/liblwjgl.dylib" ]]; then
     EXTRA_ARGS=(
       "-Djava.library.path=$NATIVES"
       "-Dorg.lwjgl.librarypath=$NATIVES"
@@ -113,23 +113,24 @@ WRAPPER
 }
 
 while true; do
-  ACTION=$(osascript -e 'button returned of (display dialog "Welcome to Minecraft @ SEHS\nClick Launch to launch ATLauncher for minecraft.\nNEW UPDATE: Click Diagnostic ONCE." buttons {"Info", "Diagnostic", "Launch"} default button "Launch" with title "SEHS Minecraft")')
+  ACTION=$(osascript -e 'button returned of (display dialog "Welcome to Minecraft @ SEHS\nClick Launch to launch ATLauncher for minecraft.\nNEW UPDATE: Click Run Diagnostic ONCE." buttons {"Info", "Run Diagnostic", "Launch"} default button "Launch" with title "SEHS Minecraft")')
   case "$ACTION" in
   "Info")
     osascript -e 'display dialog "ATLauncher lets you create and manage Minecraft instances.\n\nGetting started:\n• Sign in via Accounts tab with your Microsoft account\n• Go to Instances and click Add Instance\n• Pick a version or modpack and click Install\n• Hit Play when done\n\nEach instance is separate, great for different modpacks or versions. When using a version, you can install individual mods to it, depending on the modloader/version" buttons {"Back"} with title "Info"'
     ;;
-  "Diagnostic")
+  "Run Diagnostic")
     rm -rf "$MCDIR/Java*"
     rm -rf "$LAUNCHER_DIR/configs/ATLauncher.json"
     rm -rf "$LAUNCHER_DIR/ATLauncher.jar"
     rm -rf "$MCDIR/lwjgl-arm64-natives"
+    osascript -e 'display dialog "Diagnostic Completed.\nEmail xploczx@gmail.com about issues in detail if you encounter any." buttons {"OK"} default button "OK" with title "Diagnostic"'
     ;;
   "Launch") break ;;
   esac
 done
 
 for java_version in 8 17 21 25; do install_java $java_version; done
-#install_lwjgl_arm_natives
+install_lwjgl_arm_natives
 create_wrapper
 install_launcher
 
