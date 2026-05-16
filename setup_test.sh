@@ -40,9 +40,9 @@ install_lwjgl_arm_natives() {
   done
 }
 
-#"enableArmSupport": true
+# Minecraft enforces LWJGL x86_64 binaries even with arm support + Java arm64 17 on 1.17-1.18.2, the LWJGL loader overrides this but its broken. Do not use rosetta for 1.17-1.18.2 as its emulated performance
 install_launcher() {
-  [[ -f "$LAUNCHER_DIR/ATLauncher.jar" && -d "$LAUNCHER_DIR/configs" ]] && return
+  [[ -f "$LAUNCHER_DIR/ATLauncher.jar" && -f "$LAUNCHER_DIR/configs/ATLauncher.json" ]] && return
   mkdir -p "$LAUNCHER_DIR/configs" #Also creates LAUNCHER_DIR if it doesn't exist
   curl -fsSL -o "$LAUNCHER_DIR/ATLauncher.jar" "$(curl -s https://api.github.com/repos/ATLauncher/ATLauncher/releases/latest | grep -o 'https://[^"]*\.jar')"
   cat >"$LAUNCHER_DIR/configs/ATLauncher.json" <<'SETTINGS'
@@ -60,6 +60,7 @@ install_launcher() {
   "enableAutomaticBackupAfterLaunch": true,
   "backupMode": "NORMAL",
   "defaultInstanceSorting": "BY_NAME",
+  "theme": "com.atlauncher.themes.OneDark",
   "enableArmSupport": true
 }
 SETTINGS
@@ -87,10 +88,22 @@ done
 # 1.17-1.18.x: LWJGL 3.2.1 ships only x86_64 macOS natives. On arm64, prepend our
 # LWJGL 3.3.3 arm64 dylibs via java.library.path so the JVM finds them first.
 # 1.19+ ships natives-macos-arm64 in its own jar, so no override needed there.
+#EXTRA_ARGS=()
+#if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
+#  NATIVES="$MCDIR/lwjgl-arm64-natives"
+#  [[ -d "$NATIVES" ]] && EXTRA_ARGS=("-Djava.library.path=$NATIVES")
+#fi
+
 EXTRA_ARGS=()
 if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
   NATIVES="$MCDIR/lwjgl-arm64-natives"
-  [[ -d "$NATIVES" ]] && EXTRA_ARGS=("-Djava.library.path=$NATIVES")
+  if [[ -d "$NATIVES" ]]; then
+    EXTRA_ARGS=(
+      "-Djava.library.path=$NATIVES"
+      "-Dorg.lwjgl.librarypath=$NATIVES"
+      "-Dorg.lwjgl.openal.libname=$NATIVES/libopenal.dylib"
+    )
+  fi
 fi
 
 exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" "${EXTRA_ARGS[@]}" "$@"
@@ -107,14 +120,16 @@ while true; do
     ;;
   "Diagnostic")
     rm -rf "$MCDIR/Java*"
-    rm -rf "$LAUNCHER_DIR/configs"
+    rm -rf "$LAUNCHER_DIR/configs/ATLauncher.json"
+    rm -rf "$LAUNCHER_DIR/ATLauncher.jar"
+    rm -rf "$MCDIR/lwjgl-arm64-natives"
     ;;
   "Launch") break ;;
   esac
 done
 
 for java_version in 8 17 21 25; do install_java $java_version; done
-install_lwjgl_arm_natives
+#install_lwjgl_arm_natives
 create_wrapper
 install_launcher
 
