@@ -71,7 +71,7 @@ SETTINGS
 create_wrapper() {
   local bin="$MCDIR/JavaWrapper/Contents/Home/bin"
   mkdir -p "$bin"
-
+  MCDIR="$HOME/Documents/MCSEHS"
   cat >"$bin/java" <<'WRAPPER' # quoted as of now
 #!/bin/bash
 JAVA_VER=8
