@@ -50,7 +50,7 @@ install_launcher() {
   "selectedTabOnStartup": 2,
   "useJavaProvidedByMinecraft": false,
   "usingCustomJavaPath": true,
-  "javaPath": "$MCDIR/JavaWrapper/Contents/Home",
+  "javaPath": "${MCDIR}/JavaWrapper/Contents/Home",
   "keepLauncherOpen": true,
   "enableConsole": false,
   "useRecycleBin": true,
