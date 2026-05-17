@@ -38,13 +38,13 @@ install_lwjgl_arm_natives() {
     rm /tmp/lwjgl-native.jar
   done
 }
-
+##################################### DO NOT QUOTIZE CAT FILE INSERTIONS NO 'FOO', ONLY FOO
 # Minecraft enforces LWJGL x86_64 binaries even with arm support + Java arm64 17 on 1.17-1.18.2, the LWJGL loader overrides this but its broken. Do not use rosetta for 1.17-1.18.2 as its emulated performance
 install_launcher() {
   [[ -f "$LAUNCHER_DIR/ATLauncher.jar" && -f "$LAUNCHER_DIR/configs/ATLauncher.json" ]] && return
   mkdir -p "$LAUNCHER_DIR/configs" #Also creates LAUNCHER_DIR if it doesn't exist
   curl -fsSL -o "$LAUNCHER_DIR/ATLauncher.jar" "$(curl -s https://api.github.com/repos/ATLauncher/ATLauncher/releases/latest | grep -o 'https://[^"]*\.jar')"
-  cat >"$LAUNCHER_DIR/configs/ATLauncher.json" <<'SETTINGS'
+  cat >"$LAUNCHER_DIR/configs/ATLauncher.json" <<SETTINGS
 {
   "firstTimeRun": false,
   "selectedTabOnStartup": 2,
@@ -72,7 +72,7 @@ create_wrapper() {
   local bin="$MCDIR/JavaWrapper/Contents/Home/bin"
   mkdir -p "$bin"
 
-  cat >"$bin/java" <<'WRAPPER'
+  cat >"$bin/java" <<WRAPPER
 #!/bin/bash
 MCDIR="$HOME/Documents/MCSEHS"
 JAVA_VER=8
