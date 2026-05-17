@@ -29,8 +29,8 @@ install_lwjgl_arm_natives() {
   rm -rf "$NATIVES_DIR"
   mkdir -p "$NATIVES_DIR"
   local BASE="https://repo1.maven.org/maven2/org/lwjgl"
-  local VER="3.3.3"
-  # These are the modules 1.18.2 actually loads. Each jar is a zip containing .dylib files.
+  local VER="3.3.1" #3.3.3, but 3.3.1 is what prism has
+  # These are the modules 1.18.2 actually loads. Each jar is a zip containing .dylib files. STB, JEMALLOC, TINYFD ARE OPTIONAL
   for module in lwjgl lwjgl-glfw lwjgl-openal lwjgl-opengl lwjgl-stb lwjgl-jemalloc lwjgl-tinyfd; do
     curl -fsSL -o /tmp/lwjgl-native.jar \
       "${BASE}/${module}/${VER}/${module}-${VER}-natives-macos-arm64.jar"
@@ -87,21 +87,14 @@ done
 # 1.17-1.18.x: LWJGL 3.2.1 ships only x86_64 macOS natives. On arm64, prepend our
 # LWJGL 3.3.3 arm64 dylibs via java.library.path so the JVM finds them first.
 # 1.19+ ships natives-macos-arm64 in its own jar, so no override needed there.
-#EXTRA_ARGS=()
-#if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
-#  NATIVES="$MCDIR/lwjgl-arm64-natives"
-#  [[ -d "$NATIVES" ]] && EXTRA_ARGS=("-Djava.library.path=$NATIVES")
-#fi
+# You only need library path
 
 EXTRA_ARGS=()
 if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
   NATIVES="$MCDIR/lwjgl-arm64-natives"
   if [[ -f "$NATIVES/liblwjgl.dylib" ]]; then
-    EXTRA_ARGS=(
-      "-Djava.library.path=$NATIVES"
-      "-Dorg.lwjgl.librarypath=$NATIVES"
-      "-Dorg.lwjgl.openal.libname=$NATIVES/libopenal.dylib"
-    )
+    # Only prepend java.library.path so JVM finds our ARM64 dylibs first
+    EXTRA_ARGS=("-Djava.library.path=$NATIVES")
   fi
 fi
 
