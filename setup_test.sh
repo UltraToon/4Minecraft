@@ -72,7 +72,7 @@ create_wrapper() {
   local bin="$MCDIR/JavaWrapper/Contents/Home/bin"
   mkdir -p "$bin"
 
-  cat >"$bin/java" <<WRAPPER
+  cat >"$bin/java" <<'WRAPPER' # quoted as of now
 #!/bin/bash
 JAVA_VER=8
 # default version if nothing is found, 8 for older modpacks that might not have a updated instance.json with majorVersion field
