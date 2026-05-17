@@ -34,8 +34,7 @@ install_lwjgl_arm_natives() {
   for module in lwjgl lwjgl-glfw lwjgl-openal lwjgl-opengl lwjgl-stb lwjgl-jemalloc lwjgl-tinyfd; do
     curl -fsSL -o /tmp/lwjgl-native.jar \
       "${BASE}/${module}/${VER}/${module}-${VER}-natives-macos-arm64.jar"
-    # Jars are zip files — unzip just the .dylib files directly into NATIVES_DIR
-    unzip -q -o /tmp/lwjgl-native.jar "*.dylib" -d "$NATIVES_DIR"
+    unzip -q -o -j /tmp/lwjgl-native.jar "*.dylib" -d "$NATIVES_DIR"
     rm /tmp/lwjgl-native.jar
   done
 }
@@ -131,8 +130,8 @@ done
 
 for java_version in 8 17 21 25; do install_java $java_version; done
 install_lwjgl_arm_natives
-create_wrapper
 install_launcher
+create_wrapper
 
 pkill -f "ATLauncher.jar" 2>/dev/null || true
 cd "$LAUNCHER_DIR"
