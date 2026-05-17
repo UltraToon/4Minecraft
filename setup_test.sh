@@ -74,7 +74,6 @@ create_wrapper() {
 
   cat >"$bin/java" <<WRAPPER
 #!/bin/bash
-MCDIR="$HOME/Documents/MCSEHS"
 JAVA_VER=8
 # default version if nothing is found, 8 for older modpacks that might not have a updated instance.json with majorVersion field
 for arg in "$@"; do
