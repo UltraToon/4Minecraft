@@ -111,7 +111,7 @@ while true; do
     osascript -e 'display dialog "ATLauncher lets you create and manage Minecraft instances.\n\nGetting started:\n• Sign in via Accounts tab with your Microsoft account\n• Go to Instances and click Add Instance\n• Pick a version or modpack and click Install\n• Hit Play when done\n\nEach instance is separate, great for different modpacks or versions. When using a version, you can install individual mods to it, depending on the modloader/version" buttons {"Back"} with title "Info"'
     ;;
   "Run Diagnostic")
-    rm -rf "$MCDIR/Java*"
+    rm -rf "$MCDIR"/Java*
     rm -rf "$LAUNCHER_DIR/configs/ATLauncher.json"
     rm -rf "$LAUNCHER_DIR/ATLauncher.jar"
     rm -rf "$MCDIR/lwjgl-arm64-natives"
