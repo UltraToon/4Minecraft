@@ -75,6 +75,7 @@ create_wrapper() {
   cat >"$bin/java" <<'WRAPPER'
 #!/bin/bash
 MCDIR="$HOME/Documents/MCSEHS"
+JAVA_VER=8
 # default version if nothing is found, 8 for older modpacks that might not have a updated instance.json with majorVersion field
 for arg in "$@"; do
   [[ "$arg" == *"/ATLauncher/instances/"* ]] || continue
@@ -88,15 +89,15 @@ done
 # LWJGL 3.3.3 arm64 dylibs via java.library.path so the JVM finds them first.
 # 1.19+ ships natives-macos-arm64 in its own jar, so no override needed there.
 # You only need library path
-JAVA_VER=17
-EXTRA_ARGS=()
-if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
-  NATIVES="$MCDIR/lwjgl-arm64-natives"
-  if [[ -f "$NATIVES/liblwjgl.dylib" ]]; then
-    # Only prepend java.library.path so JVM finds our ARM64 dylibs first
-    EXTRA_ARGS=("-Djava.library.path=$NATIVES")
-  fi
-fi
+
+# EXTRA_ARGS=()
+# if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
+#   NATIVES="$MCDIR/lwjgl-arm64-natives"
+#   if [[ -f "$NATIVES/liblwjgl.dylib" ]]; then
+#     # Only prepend java.library.path so JVM finds our ARM64 dylibs first
+#     EXTRA_ARGS=("-Djava.library.path=$NATIVES")
+#   fi
+# fi
 
 exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" "${EXTRA_ARGS[@]}" "$@"
 WRAPPER
