@@ -98,7 +98,7 @@ if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
   fi
 fi
 
-exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" "${EXTRA_ARGS[@]}" "$@"
+exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" "$@" "${EXTRA_ARGS[@]}"
 WRAPPER
 
   chmod +x "$bin/java"
