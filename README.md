@@ -3,5 +3,5 @@
 - Read instructions
 
 ## Todo:
-Add prepacked instances
+Add prepacked instances  
 Fix duplication of LWGJL argument in ps aux | grep java when 1.17-1.18 arm64
