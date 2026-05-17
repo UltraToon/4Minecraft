@@ -124,8 +124,8 @@ done
 
 for java_version in 8 17 21 25; do install_java $java_version; done
 install_lwjgl_arm_natives
-install_launcher
 create_wrapper
+install_launcher
 
 pkill -f "ATLauncher.jar" 2>/dev/null || true
 cd "$LAUNCHER_DIR"
