@@ -59,7 +59,8 @@ install_launcher() {
   "enableAutomaticBackupAfterLaunch": true,
   "backupMode": "NORMAL",
   "defaultInstanceSorting": "BY_LAST_PLAYED",
-  "theme": "com.atlauncher.themes.OneDark"
+  "theme": "com.atlauncher.themes.OneDark",
+  "enableTrayMenu": false
 }
 SETTINGS
 }
