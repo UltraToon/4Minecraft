@@ -67,6 +67,7 @@ SETTINGS
 # Writes a thin Java shim that ATLauncher calls for every instance launch.
 # The shim reads instance.json to find the required Java version, then exec's
 # into the correct Corretto — leaving zero memory/CPU overhead while playing.
+# ATLauncher will say executing with appended args, but its usually not actually being executed as this does this action and can choose whether to carry those args or not. Misleading eh
 create_wrapper() {
   local bin="$MCDIR/JavaWrapper/Contents/Home/bin"
   mkdir -p "$bin"
