@@ -105,7 +105,7 @@ WRAPPER
 }
 
 while true; do
-  ACTION=$(osascript -e 'button returned of (display dialog "NEW UPDATE: Click Run Diagnostic ONCE.\nClick Launch to launch ATLauncher for minecraft.\nATLauncher lets you create and manage Minecraft instances.\n\nGetting started:\n• Sign in via Accounts tab with your Microsoft account\n• Go to Instances and click Add Instance\n• Pick a version or modpack and click Install\n• Hit Play when done\n\nEach instance is separate, great for different modpacks or versions. When using a version, you can install individual mods to it, depending on the modloader/version" buttons {"Quit", "Run Diagnostic", "Launch"} default button "Launch" with title "Welcome to MCSEHS")')
+  ACTION=$(osascript -e 'button returned of (display dialog "NEW UPDATE: Click Run Diagnostic ONCE.\nClick Launch to launch ATLauncher for minecraft.\nATLauncher lets you create and manage Minecraft instances.\n\nGetting started:\n• Sign in via Accounts tab with your Microsoft account\n• Go to Packs/Create Packs to start an instance\n• Pick a version/modpack and go through installation\n• Go back to instances and press play.\n\nEach instance is separate, making it easy to manage different modpacks or versions. You can also install individual mods depending on the version and modloader. {"Quit", "Run Diagnostic", "Launch"} default button "Launch" with title "Welcome to MCSEHS")')
   case "$ACTION" in
   "Quit")
     exit 0
