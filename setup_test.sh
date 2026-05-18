@@ -99,6 +99,8 @@ if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
   fi
 fi
 
+printf >&2 "\n[SHIM] Executing Real Java Runtime: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
+printf >&2 "[SHIM] True Arguments Being Passed:\n"
 exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" "$@" "${EXTRA_ARGS[@]}"
 WRAPPER
 
