@@ -47,7 +47,7 @@ install_launcher() {
   cat >"$LAUNCHER_DIR/configs/ATLauncher.json" <<SETTINGS
 {
   "firstTimeRun": false,
-  "selectedTabOnStartup": 2,
+  "selectedTabOnStartup": 3,
   "useJavaProvidedByMinecraft": false,
   "usingCustomJavaPath": true,
   "javaPath": "${MCDIR}/JavaWrapper/Contents/Home",
