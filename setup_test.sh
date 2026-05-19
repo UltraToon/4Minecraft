@@ -24,14 +24,17 @@ install_java() {
 }
 
 # ATLauncher doesn't bundle ARM natives for LWJGL 1.17-1.18.2, so we have to do it ourselves. Only do this on ARM Macs, x86 can use the bundled x64 natives just fine.
-install_lwjgl_arm_natives() {
-  [[ "$(uname -m)" != "arm64" || -f "$NATIVES_DIR/liblwjgl.dylib" ]] && return # check for x86 mac so leave, otherwise also check if missing liblwgjl
-  rm -rf "$NATIVES_DIR"
-  mkdir -p "$NATIVES_DIR"
+install_lwjgl_arm64() {
+  [[ "$(uname -m)" != "arm64" || -f "$NATIVES_DIR/liblwjgl.dylib" ]] && return
+  echo "Installing ARM64 LWJGL natives and jars..."
+  mkdir -p "$NATIVES_DIR" "$JARS_DIR"
   local BASE="https://repo1.maven.org/maven2/org/lwjgl"
-  local VER="3.3.1" #3.3.3, but 3.3.1 is what prism has
-  # These are the modules 1.18.2 actually loads. Each jar is a zip containing .dylib files. STB, JEMALLOC, TINYFD ARE OPTIONAL
+  local VER="3.3.1"
   for module in lwjgl lwjgl-glfw lwjgl-openal lwjgl-opengl lwjgl-stb lwjgl-jemalloc lwjgl-tinyfd; do
+    # Download the Java jar (classes)
+    curl -fsSL -o "$JARS_DIR/${module}-${VER}.jar" \
+      "${BASE}/${module}/${VER}/${module}-${VER}.jar"
+    # Download the ARM64 native jar and extract dylibs
     curl -fsSL -o /tmp/lwjgl-native.jar \
       "${BASE}/${module}/${VER}/${module}-${VER}-natives-macos-arm64.jar"
     unzip -q -o -j /tmp/lwjgl-native.jar "*.dylib" -d "$NATIVES_DIR"
@@ -59,8 +62,7 @@ install_launcher() {
   "enableAutomaticBackupAfterLaunch": true,
   "backupMode": "NORMAL",
   "defaultInstanceSorting": "BY_LAST_PLAYED",
-  "theme": "com.atlauncher.themes.OneDark",
-  "enableTrayMenu": false
+  "theme": "com.atlauncher.themes.OneDark"
 }
 SETTINGS
 }
@@ -90,14 +92,6 @@ done
 # 1.19+ ships natives-macos-arm64 in its own jar, so no override needed there.
 # You only need library path
 
-EXTRA_ARGS=()
-if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
-  NATIVES="$MCDIR/lwjgl-arm64-natives"
-  if [[ -f "$NATIVES/liblwjgl.dylib" ]]; then
-    # Only prepend java.library.path so JVM finds our ARM64 dylibs first
-    EXTRA_ARGS=("-Djava.library.path=$NATIVES")
-  fi
-fi
 printf "###===========================================================###\n"
 printf >&2 "\n[SHIM] EXECUTING JAVA RUNTIME: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
 printf >&2 "[SHIM] TRUE JVM ARGUMENTS:\n"
@@ -126,7 +120,7 @@ while true; do
 done
 
 for java_version in 8 17 21 25; do install_java $java_version; done
-install_lwjgl_arm_natives
+install_lwjgl_arm64
 create_wrapper
 install_launcher
 
