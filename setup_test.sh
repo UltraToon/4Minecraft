@@ -87,10 +87,45 @@ for arg in "$@"; do
   break
 done
 
-# 1.17-1.18.x: LWJGL 3.2.1 ships only x86_64 macOS natives. On arm64, prepend our
-# LWJGL 3.3.3 arm64 dylibs via java.library.path so the JVM finds them first.
-# 1.19+ ships natives-macos-arm64 in its own jar, so no override needed there.
-# You only need library path
+if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
+  NATIVES="$MCDIR/lwjgl-arm64-natives"
+  JARS="$MCDIR/lwjgl-arm64-jars"
+
+  if [[ -d "$JARS" && -d "$NATIVES" ]]; then
+    new_args=()
+    found_library_path=false
+    found_cp=false
+
+    for arg in "$@"; do
+      # Replace library path
+      if [[ "$arg" == -Djava.library.path=* ]]; then
+        new_args+=("-Djava.library.path=$NATIVES")
+        found_library_path=true
+      # Replace classpath
+      elif [[ "$found_cp" == true ]]; then
+        # Remove old LWJGL jars and append our new ones
+        IFS=':' read -ra cp_entries <<< "$arg"
+        new_cp=()
+        for entry in "${cp_entries[@]}"; do
+          [[ "$entry" != *"/org/lwjgl/"* ]] && new_cp+=("$entry")
+        done
+        # Append all our replacement jars
+        for jar in "$JARS"/*.jar; do
+          new_cp+=("$jar")
+        done
+        new_args+=("$(IFS=:; echo "${new_cp[*]}")")
+        found_cp=false
+      else
+        new_args+=("$arg")
+      fi
+      # Track when we see -cp
+      [[ "$arg" == "-cp" ]] && found_cp=true
+    done
+
+    set -- "${new_args[@]}"
+  fi
+fi
+
 
 printf "###===========================================================###\n"
 printf >&2 "\n[SHIM] EXECUTING JAVA RUNTIME: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
