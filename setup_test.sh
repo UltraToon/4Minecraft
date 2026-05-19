@@ -115,7 +115,7 @@ while true; do
     exit 0
     ;;
   "Run Diagnostic")
-    rm -rf "$MCDIR"/Java*
+    rm -rf "$MCDIR"/JavaWrapper
     rm -rf "$LAUNCHER_DIR"/configs/ATLauncher.json
     rm -rf "$LAUNCHER_DIR"/ATLauncher.jar
     rm -rf "$MCDIR"/lwjgl-arm64-natives
