@@ -92,36 +92,29 @@ done
 # Force Java 17 for Minecraft 1.17 (needs 16, but 17 works perfectly)
 [[ "$MC_VER" == 1.17* ]] && JAVA_VER=17
 if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" && "$MC_VER" == 1.1[78]* && -d "$NATIVES" && -d "$JARS" ]]; then
-  new_args=()
-  cp_next=false
-  for arg in "$@"; do
-    if $cp_next; then
-      IFS=':' read -ra cp_entries <<< "$arg"
-      new_cp=()
-      for entry in "${cp_entries[@]}"; do
-        [[ "$entry" != *"/org/lwjgl/"* ]] && new_cp+=("$entry")
-      done
-      # 2. Append our replacement ARM64 jars
-      for jar in "$JARS"/*.jar; do
-        new_cp+=("$jar")
-      done
-      # 3. Join the array back into a single string separated by colons
-      new_args+=("$(IFS=:; echo "${new_cp[*]}")")
-      cp_next=false
-    elif [[ "$arg" == -Djava.library.path=* ]]; then
-      new_args+=("-Djava.library.path=$NATIVES")
-    elif [[ "$arg" == "-cp" ]]; then
-      new_args+=("$arg")
-      cp_next=true
-    else
-      new_args+=("$arg")
-    fi
-  done
-  set -- "${new_args[@]}"
+new_args=()
+cp_next=false
+for arg in "$@"; do
+  if $cp_next; then
+    IFS=':' read -ra cp_entries <<< "$arg"
+    new_cp=()
+    for entry in "${cp_entries[@]}"; do
+      [[ "$entry" != *"/org/lwjgl/"* ]] && new_cp+=("$entry")
+    done
+    for jar in "$JARS"/*.jar; do new_cp+=("$jar"); done
+    new_args+=("$(IFS=:; echo "${new_cp[*]}")")
+    cp_next=false
+  elif [[ "$arg" == -Djava.library.path=* ]]; then
+    new_args+=("-Djava.library.path=$NATIVES")
+  elif [[ "$arg" == "-cp" ]]; then
+    new_args+=("$arg")
+    cp_next=true
+  else
+    new_args+=("$arg")
+  fi
+done
+set -- "${new_args[@]}"
 fi
-
-
-
 
 printf "###===========================================================###"
 printf >&2 "[SHIM] EXECUTING JAVA RUNTIME: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
