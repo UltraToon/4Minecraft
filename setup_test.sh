@@ -102,8 +102,8 @@ for arg in "$@"; do
   [[ -z "$JAVA_VER" ]] && JAVA_VER=8
   break
 done
-case "$MC_VER" in
-1.13* | 1.14* | 1.15* | 1.16* | 1.17* | 1.18*)
+#case "$MC_VER" in
+#1.13* | 1.14* | 1.15* | 1.16* | 1.17* | 1.18*)
   if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" && -d "$NATIVES" && -d "$JARS" ]]; then
     new_args=()
     cp_next=false
@@ -127,8 +127,8 @@ case "$MC_VER" in
     done
     set -- "${new_args[@]}"
   fi
-  ;;
-esac
+#  ;;
+#esac
 printf "###===========================================================###"
 printf >&2 "[SHIM] EXECUTING JAVA RUNTIME: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
 printf >&2 "[SHIM] ACTUAL JVM ARGUMENTS: %s\n" "$*"
