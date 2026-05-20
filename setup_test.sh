@@ -154,5 +154,5 @@ install_launcher
 
 pkill -f "ATLauncher.jar" 2>/dev/null || true
 cd "$LAUNCHER_DIR"
-"$MCDIR/Java21/Contents/Home/bin/java" -jar "$LAUNCHER_DIR/ATLauncher.jar" || osascript -e 'display dialog "ATLauncher failed to start.\nTry re-running the script." buttons {"OK"} with title "SEHS Minecraft"'
+"$MCDIR/Java21/Contents/Home/bin/java" -jar "$LAUNCHER_DIR/ATLauncher.jar" || osascript -e 'display dialog "ATLauncher failed to start. Try re-running the script. Contact xploczx@gmail.com if issue persists." buttons {"OK"} with title "SEHS Minecraft"'
 # Using Java LTS versions for launcher bootup, this is the latest as of now.
