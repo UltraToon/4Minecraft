@@ -80,63 +80,60 @@ create_wrapper() {
   cat >"$bin/java" <<'WRAPPER' # quoted as of now
 #!/bin/bash
 MCDIR="$HOME/Documents/MCSEHS"
-JAVA_VER=8
+NATIVES="$MCDIR/lwjgl-arm64-natives"
+JARS="$MCDIR/lwjgl-arm64-jars"
 for arg in "$@"; do
   [[ "$arg" == *"/ATLauncher/instances/"* ]] || continue
   instance="${arg#*/ATLauncher/instances/}"
   json="$MCDIR/ATLauncher/instances/${instance%%/*}/instance.json"
   JAVA_VER=$(grep '"majorVersion"' "$json" | head -1 | sed -E 's/.*:[[:space:]]*([0-9]+).*/\1/')
+  MC_VER=$(grep '"id"' "$json" | head -1 | sed -E 's/.*"id"[[:space:]]*:[[:space:]]*"([^"]*)".*/\1/')
+  [[ -z "$JAVA_VER" ]] && JAVA_VER=8
   break
 done
-
-# 2. On ARM64 + Java 17 (1.17-1.18.2): replace LWJGL jars and library path
-if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
-  NATIVES_DIR="$MCDIR/lwjgl-arm64-natives"
-  JARS_DIR="$MCDIR/lwjgl-arm64-jars"
-
-  if [[ -d "$JARS_DIR" && -d "$NATIVES_DIR" ]]; then
+Force Java 17 for Minecraft 1.17 (needs 16, but 17 works perfectly)
+[[ "$MC_VER" == 1.17* ]] && JAVA_VER=17
+for arg in "$@"; do
+  [[ "$arg" == *"/ATLauncher/instances/"* ]] || continue
+  instance="${arg#*/ATLauncher/instances/}"
+  json="$MCDIR/ATLauncher/instances/${instance%%/*}/instance.json"
+  JAVA_VER=$(grep '"majorVersion"' "$json" | head -1 | sed -E 's/.*:[[:space:]]*([0-9]+).*/\1/')
+  MC_VER=$(grep '"id"' "$json" | head -1 | sed -E 's/.*"id"[[:space:]]*:[[:space:]]*"([^"]*)".*/\1/')
+  [[ -z "$JAVA_VER" ]] && JAVA_VER=8
+  break
+done
+case "$MC_VER" in
+1.13* | 1.14* | 1.15* | 1.16* | 1.17* | 1.18*)
+  if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" && -d "$NATIVES" && -d "$JARS" ]]; then
     new_args=()
-    found_library_path=false
-    found_cp=false
-
+    cp_next=false
     for arg in "$@"; do
-      # Replace library path
-      if [[ "$arg" == -Djava.library.path=* ]]; then
-        new_args+=("-Djava.library.path=$NATIVES_DIR")
-        found_library_path=true
-      # Replace classpath
-      elif [[ "$found_cp" == true ]]; then
-        # Remove old LWJGL jars and append our new ones
-        IFS=':' read -ra cp_entries <<< "$arg"
-        new_cp=()
-        for entry in "${cp_entries[@]}"; do
-          [[ "$entry" != *"/org/lwjgl/"* ]] && new_cp+=("$entry")
+      if $cp_next; then
+        # Remove all old /org/lwjgl/ jars, then append our replacement jars
+        stripped=$(echo ":$arg:" | sed 's/:[^:]*\/org\/lwjgl\/[^:]*:/:/g' | sed 's/^://;s/:$//')
+        for jar in "$JARS"/*.jar; do
+          stripped="$stripped:$jar"
         done
-        # Append all our replacement jars
-        for jar in "$JARS_DIR"/*.jar; do
-          new_cp+=("$jar")
-        done
-        new_args+=("$(IFS=:; echo "${new_cp[*]}")")
-        found_cp=false
+        new_args+=("$stripped")
+        cp_next=false
+      elif [[ "$arg" == -Djava.library.path=* ]]; then
+        new_args+=("-Djava.library.path=$NATIVES")
+      elif [[ "$arg" == "-cp" ]]; then
+        new_args+=("$arg")
+        cp_next=true
       else
         new_args+=("$arg")
       fi
-      # Track when we see -cp
-      [[ "$arg" == "-cp" ]] && found_cp=true
     done
-
     set -- "${new_args[@]}"
   fi
-fi
-
-
-
+  ;;
+esac
 printf "###===========================================================###"
-printf >&2 "[SHIM] EXECUTING JAVA RUNTIME: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"jkhjkh
-printf >&2 "[SHIM] TRUE JVM ARGUMENTS: %s\n" "$*"
+printf >&2 "[SHIM] EXECUTING JAVA RUNTIME: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
+printf >&2 "[SHIM] ACTUAL JVM ARGUMENTS: %s\n" "$*"
 exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" "$@"
 WRAPPER
-
   chmod +x "$bin/java"
 }
 
