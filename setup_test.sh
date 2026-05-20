@@ -93,9 +93,9 @@ for arg in "$@"; do
 done
 Force Java 17 for Minecraft 1.17 (needs 16, but 17 works perfectly)
 [[ "$MC_VER" == 1.17* ]] && JAVA_VER=17
-#case "$MC_VER" in
-#1.13* | 1.14* | 1.15* | 1.16* | 1.17* | 1.18*)
-#  if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" && -d "$NATIVES" && -d "$JARS" ]]; then
+case "$MC_VER" in
+"1.13"* | "1.14"* | "1.15"* | "1.16"* | "1.17"* | "1.18"*)
+  if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" && -d "$NATIVES" && -d "$JARS" ]]; then
     new_args=()
     cp_next=false
     for arg in "$@"; do
@@ -117,8 +117,8 @@ Force Java 17 for Minecraft 1.17 (needs 16, but 17 works perfectly)
       fi
     done
     set -- "${new_args[@]}"
-#  fi
-#  ;;
+  fi
+  ;;
 #esac
 printf "###===========================================================###"
 printf >&2 "[SHIM] EXECUTING JAVA RUNTIME: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
