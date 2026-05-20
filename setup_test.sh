@@ -152,10 +152,10 @@ fi
 
 
 
-printf "###===========================================================###\n"
+printf "\n###===========================================================###"
 printf >&2 "\n[SHIM] EXECUTING JAVA RUNTIME: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
-printf >&2 "[SHIM] TRUE JVM ARGUMENTS:\n"
-printf "###===========================================================###\n"
+printf >&2 "[SHIM] TRUE JVM ARGUMENTS:\n$@"
+printf "\n###===========================================================###"
 exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" "$@"
 WRAPPER
 
