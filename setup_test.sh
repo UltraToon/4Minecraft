@@ -87,7 +87,7 @@ JAVA_VER=8
 #   JAVA_VER=$(grep '"majorVersion"' "$json" | tr -dc '0-9')
 #   break
 # done
-
+for arg in "$@"; do
   [[ "$arg" == *"/ATLauncher/instances/"* ]] || continue
   instance="${arg#*/ATLauncher/instances/}"
   json="$MCDIR/ATLauncher/instances/${instance%%/*}/instance.json"
