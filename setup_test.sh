@@ -55,6 +55,7 @@ install_launcher() {
   "selectedTabOnStartup": 3,
   "useJavaProvidedByMinecraft": false,
   "usingCustomJavaPath": true,
+  "ignoreJavaOnInstanceLaunch": true,
   "javaPath": "${MCDIR}/JavaWrapper/Contents/Home",
   "keepLauncherOpen": true,
   "enableConsole": false,
@@ -156,7 +157,7 @@ while true; do
   esac
 done
 
-for java_version in 8 16 17 21 25; do install_java $java_version; done
+for java_version in 8 17 21 25; do install_java $java_version; done
 install_lwjgl_arm64
 create_wrapper
 install_launcher
