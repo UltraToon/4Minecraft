@@ -109,7 +109,7 @@ if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
     for arg in "$@"; do
       # Replace library path
       if [[ "$arg" == -Djava.library.path=* ]]; then
-        new_args+=("-Djava.library.path=$NATIVES")
+        new_args+=("-Djava.library.path=$NATIVES_DIR")
         found_library_path=true
       # Replace classpath
       elif [[ "$found_cp" == true ]]; then
