@@ -119,6 +119,10 @@ if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" && "$MC_VER" == 1.1[78]* &
   done
   set -- "${new_args[@]}"
 fi
+
+
+
+
 printf "###===========================================================###"
 printf >&2 "[SHIM] EXECUTING JAVA RUNTIME: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
 printf >&2 "[SHIM] ACTUAL JVM ARGUMENTS: %s\n" "$*"
