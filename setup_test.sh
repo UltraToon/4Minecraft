@@ -93,7 +93,7 @@ install_java() {
   rm /tmp/java-corretto.tar.gz
   kill $DIALOG 2>/dev/null
 }
-[[ -d "$MCDIR/Java$JAVA_VER" ]] || install_java "$JAVA_VER"
+[[ -d "$MCDIR/Java${JAVA_VER}" ]] || install_java "$JAVA_VER"
 
 if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" && "$MC_VER" == 1.1[78]* && -d "$NATIVES" && -d "$JARS" ]]; then
 new_args=()
