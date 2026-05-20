@@ -79,19 +79,27 @@ create_wrapper() {
 MCDIR="$HOME/Documents/MCSEHS"
 JAVA_VER=8
 # default version if nothing is found, 8 for older modpacks that might not have a updated instance.json with majorVersion field
-for arg in "$@"; do
+# for arg in "$@"; do
+#   [[ "$arg" == *"/ATLauncher/instances/"* ]] || continue
+#   instance="${arg#*/ATLauncher/instances/}"
+#   json="$MCDIR/ATLauncher/instances/${instance%%/*}/instance.json"
+#   JAVA_VER=$(grep '"majorVersion"' "$json" | tr -dc '0-9')
+#   break
+# done
+
   [[ "$arg" == *"/ATLauncher/instances/"* ]] || continue
   instance="${arg#*/ATLauncher/instances/}"
   json="$MCDIR/ATLauncher/instances/${instance%%/*}/instance.json"
-  JAVA_VER=$(grep '"majorVersion"' "$json" | tr -dc '0-9')
+  JAVA_VER=$(grep '"majorVersion"' "$json" | head -1 | sed -E 's/.*:[[:space:]]*([0-9]+).*/\1/')
   break
 done
 
+# 2. On ARM64 + Java 17 (1.17-1.18.2): replace LWJGL jars and library path
 if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
   NATIVES="$MCDIR/lwjgl-arm64-natives"
   JARS="$MCDIR/lwjgl-arm64-jars"
 
-  if [[ -d "$JARS" && -d "$NATIVES" ]]; then
+  if [[ -d "$JARS_DIR" && -d "$NATIVES_DIR" ]]; then
     new_args=()
     found_library_path=false
     found_cp=false
@@ -122,16 +130,32 @@ if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
       [[ "$arg" == "-cp" ]] && found_cp=true
     done
 
+    # Safety: if -Djava.library.path was not found, insert it before the classpath
+    #if ! $found_library_path; then
+    #  final_args=()
+    #  inserted=false
+    #  for arg in "${new_args[@]}"; do
+    #    if [[ "$arg" == "-cp" && "$inserted" == false ]]; then
+    #      final_args+=("-Djava.library.path=$NATIVES")
+    #      inserted=true
+    #    fi
+    #    final_args+=("$arg")
+    #  done
+    #  $inserted || final_args=("-Djava.library.path=$NATIVES" "${new_args[@]}")
+    #  new_args=("${final_args[@]}")
+    #fi
+
     set -- "${new_args[@]}"
   fi
 fi
+
 
 
 printf "###===========================================================###\n"
 printf >&2 "\n[SHIM] EXECUTING JAVA RUNTIME: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
 printf >&2 "[SHIM] TRUE JVM ARGUMENTS:\n"
 printf "###===========================================================###\n"
-exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" "$@" "${EXTRA_ARGS[@]}"
+exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" "$@"
 WRAPPER
 
   chmod +x "$bin/java"
