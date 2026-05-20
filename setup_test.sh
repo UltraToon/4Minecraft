@@ -97,8 +97,8 @@ done
 
 # 2. On ARM64 + Java 17 (1.17-1.18.2): replace LWJGL jars and library path
 if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
-  NATIVES="$MCDIR/lwjgl-arm64-natives"
-  JARS="$MCDIR/lwjgl-arm64-jars"
+  NATIVES_DIR="$MCDIR/lwjgl-arm64-natives"
+  JARS_DIR="$MCDIR/lwjgl-arm64-jars"
 
   if [[ -d "$JARS_DIR" && -d "$NATIVES_DIR" ]]; then
     new_args=()
