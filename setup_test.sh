@@ -93,15 +93,6 @@ for arg in "$@"; do
 done
 Force Java 17 for Minecraft 1.17 (needs 16, but 17 works perfectly)
 [[ "$MC_VER" == 1.17* ]] && JAVA_VER=17
-for arg in "$@"; do
-  [[ "$arg" == *"/ATLauncher/instances/"* ]] || continue
-  instance="${arg#*/ATLauncher/instances/}"
-  json="$MCDIR/ATLauncher/instances/${instance%%/*}/instance.json"
-  JAVA_VER=$(grep '"majorVersion"' "$json" | head -1 | sed -E 's/.*:[[:space:]]*([0-9]+).*/\1/')
-  MC_VER=$(grep '"id"' "$json" | head -1 | sed -E 's/.*"id"[[:space:]]*:[[:space:]]*"([^"]*)".*/\1/')
-  [[ -z "$JAVA_VER" ]] && JAVA_VER=8
-  break
-done
 #case "$MC_VER" in
 #1.13* | 1.14* | 1.15* | 1.16* | 1.17* | 1.18*)
   if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" && -d "$NATIVES" && -d "$JARS" ]]; then
