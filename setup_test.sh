@@ -3,6 +3,7 @@ set -euo pipefail
 MCDIR="$HOME/Documents/MCSEHS"
 LAUNCHER_DIR="$MCDIR/ATLauncher"
 NATIVES_DIR="$MCDIR/lwjgl-arm64-natives"
+JARS_DIR="$MCDIR/lwjgl-arm64-jars"
 
 install_java() {
   local JAVA_DIR="$MCDIR/Java$1"
@@ -118,7 +119,7 @@ if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
           [[ "$entry" != *"/org/lwjgl/"* ]] && new_cp+=("$entry")
         done
         # Append all our replacement jars
-        for jar in "$JARS"/*.jar; do
+        for jar in "$JARS_DIR"/*.jar; do
           new_cp+=("$jar")
         done
         new_args+=("$(IFS=:; echo "${new_cp[*]}")")
