@@ -9,27 +9,6 @@ JARS_DIR="$MCDIR/lwjgl-arm64-jars"
 #  Incrementally install java depending on launched version instead of initilization
 # Edit backup settings more
 # Find a way to do LGJWL 2 and LGJWL 1.17
-
-
-install_java() {
-  local JAVA_DIR="$MCDIR/Java$1"
-  [ -d "$JAVA_DIR" ] && return
-  local ARCH
-  [[ "$(uname -m)" == "arm64" ]] && ARCH="aarch64" || ARCH="x64"
-  # The line below makes it so Java 8 is always x64, because MC doesnt support ARM with Java 8 on older versions. It automatically installs rosetta on ARM macs for compatibility with x64 Java 8
-  [[ "$1" == "8" ]] && {
-    ARCH="x64"
-    softwareupdate --install-rosetta --agree-to-license 2>/dev/null || true
-  }
-  osascript -e "display dialog \"Installing Java $1...\nThis one-time process takes a moment.\" buttons {\"OK\"} default button \"OK\" with title \"Java Installer\"" &
-  local DIALOG=$!
-  mkdir -p "$JAVA_DIR" #Also creates MCDIR if it doesn't exist
-  curl -fsSL -o /tmp/java-corretto.tar.gz "https://corretto.aws/downloads/latest/amazon-corretto-${1}-${ARCH}-macos-jdk.tar.gz"
-  tar -xzf /tmp/java-corretto.tar.gz -C "$JAVA_DIR" --strip-components=1
-  rm /tmp/java-corretto.tar.gz
-  kill $DIALOG 2>/dev/null
-}
-
 # ATLauncher doesn't bundle ARM natives for LWJGL 1.17-1.18.2, so we have to do it ourselves. Only do this on ARM Macs, x86 can use the bundled x64 natives just fine.
 install_lwjgl_arm64() {
   [[ "$(uname -m)" != "arm64" || -f "$NATIVES_DIR/liblwjgl.dylib" ]] && return
@@ -92,11 +71,31 @@ for arg in "$@"; do
   json="$MCDIR/ATLauncher/instances/${instance%%/*}/instance.json"
   JAVA_VER=$(grep '"majorVersion"' "$json" | head -1 | sed -E 's/.*:[[:space:]]*([0-9]+).*/\1/')
   MC_VER=$(grep '"id"' "$json" | head -1 | sed -E 's/.*"id"[[:space:]]*:[[:space:]]*"([^"]*)".*/\1/')
+  [[ "$MC_VER" == 1.17* ]] && JAVA_VER=17
   [[ -z "$JAVA_VER" ]] && JAVA_VER=8
   break
 done
-# Force Java 17 for Minecraft 1.17 (needs 16, but 17 works perfectly)
-[[ "$MC_VER" == 1.17* ]] && JAVA_VER=17
+
+install_java() {
+  local JAVA_DIR="$MCDIR/Java$1"
+  [ -d "$JAVA_DIR" ] && return
+  local ARCH
+  [[ "$(uname -m)" == "arm64" ]] && ARCH="aarch64" || ARCH="x64"
+  # The line below makes it so Java 8 is always x64, because MC doesnt support ARM with Java 8 on older versions. It automatically installs rosetta on ARM macs for compatibility with x64 Java 8
+  [[ "$1" == "8" ]] && {
+    ARCH="x64"
+    softwareupdate --install-rosetta --agree-to-license 2>/dev/null || true
+  }
+  osascript -e "display dialog \"Installing Java $1...\nThis one-time process takes a moment.\" buttons {\"OK\"} default button \"OK\" with title \"Java Installer\"" &
+  local DIALOG=$!
+  mkdir -p "$JAVA_DIR" #Also creates MCDIR if it doesn't exist
+  curl -fsSL -o /tmp/java-corretto.tar.gz "https://corretto.aws/downloads/latest/amazon-corretto-${1}-${ARCH}-macos-jdk.tar.gz"
+  tar -xzf /tmp/java-corretto.tar.gz -C "$JAVA_DIR" --strip-components=1
+  rm /tmp/java-corretto.tar.gz
+  kill $DIALOG 2>/dev/null
+}
+[[ -d "$MCDIR/Java$JAVA_VER" ]] || install_java "$JAVA_VER"
+
 if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" && "$MC_VER" == 1.1[78]* && -d "$NATIVES" && -d "$JARS" ]]; then
 new_args=()
 cp_next=false
@@ -147,7 +146,6 @@ while true; do
   esac
 done
 
-for java_version in 8 17 21 25; do install_java $java_version; done
 install_lwjgl_arm64
 create_wrapper
 install_launcher
