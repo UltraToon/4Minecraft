@@ -172,7 +172,7 @@ while true; do
     rm -rf "$MCDIR"/JavaWrapper
     rm -rf "$LAUNCHER_DIR"/configs/ATLauncher.json
     rm -rf "$LAUNCHER_DIR"/ATLauncher.jar
-    rm -rf "$MCDIR"/lwjgl-arm64-natives
+    rm -rf "$MCDIR"/lwjgl-arm64*
     osascript -e 'display dialog "Diagnostic Completed.\nEmail xploczx@gmail.com about issues in detail if you encounter any." buttons {"OK"} default button "OK" with title "Diagnostic"'
     ;;
   "Launch") break ;;
