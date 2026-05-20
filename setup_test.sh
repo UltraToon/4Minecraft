@@ -5,6 +5,12 @@ LAUNCHER_DIR="$MCDIR/ATLauncher"
 NATIVES_DIR="$MCDIR/lwjgl-arm64-natives"
 JARS_DIR="$MCDIR/lwjgl-arm64-jars"
 
+# TODO
+#  Incrementally install java depending on launched version instead of initilization
+# Edit backup settings more
+# Find a way to do LGJWL 2 and LGJWL 1.17
+
+
 install_java() {
   local JAVA_DIR="$MCDIR/Java$1"
   [ -d "$JAVA_DIR" ] && return
