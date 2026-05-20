@@ -91,7 +91,7 @@ for arg in "$@"; do
   [[ -z "$JAVA_VER" ]] && JAVA_VER=8
   break
 done
-Force Java 17 for Minecraft 1.17 (needs 16, but 17 works perfectly)
+#Force Java 17 for Minecraft 1.17 (needs 16, but 17 works perfectly)
 [[ "$MC_VER" == 1.17* ]] && JAVA_VER=17
 case "$MC_VER" in
 "1.13"* | "1.14"* | "1.15"* | "1.16"* | "1.17"* | "1.18"*)
@@ -119,7 +119,7 @@ case "$MC_VER" in
     set -- "${new_args[@]}"
   fi
   ;;
-#esac
+esac
 printf "###===========================================================###"
 printf >&2 "[SHIM] EXECUTING JAVA RUNTIME: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
 printf >&2 "[SHIM] ACTUAL JVM ARGUMENTS: %s\n" "$*"
