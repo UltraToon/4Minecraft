@@ -80,14 +80,6 @@ create_wrapper() {
 #!/bin/bash
 MCDIR="$HOME/Documents/MCSEHS"
 JAVA_VER=8
-# default version if nothing is found, 8 for older modpacks that might not have a updated instance.json with majorVersion field
-# for arg in "$@"; do
-#   [[ "$arg" == *"/ATLauncher/instances/"* ]] || continue
-#   instance="${arg#*/ATLauncher/instances/}"
-#   json="$MCDIR/ATLauncher/instances/${instance%%/*}/instance.json"
-#   JAVA_VER=$(grep '"majorVersion"' "$json" | tr -dc '0-9')
-#   break
-# done
 for arg in "$@"; do
   [[ "$arg" == *"/ATLauncher/instances/"* ]] || continue
   instance="${arg#*/ATLauncher/instances/}"
@@ -132,21 +124,6 @@ if [[ "$(uname -m)" == "arm64" && "$JAVA_VER" == "17" ]]; then
       [[ "$arg" == "-cp" ]] && found_cp=true
     done
 
-    # Safety: if -Djava.library.path was not found, insert it before the classpath
-    #if ! $found_library_path; then
-    #  final_args=()
-    #  inserted=false
-    #  for arg in "${new_args[@]}"; do
-    #    if [[ "$arg" == "-cp" && "$inserted" == false ]]; then
-    #      final_args+=("-Djava.library.path=$NATIVES")
-    #      inserted=true
-    #    fi
-    #    final_args+=("$arg")
-    #  done
-    #  $inserted || final_args=("-Djava.library.path=$NATIVES" "${new_args[@]}")
-    #  new_args=("${final_args[@]}")
-    #fi
-
     set -- "${new_args[@]}"
   fi
 fi
@@ -155,8 +132,7 @@ fi
 
 printf "\n###===========================================================###"
 printf >&2 "\n[SHIM] EXECUTING JAVA RUNTIME: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
-printf >&2 "[SHIM] TRUE JVM ARGUMENTS:\n"
-echo $@
+printf >&2 "[SHIM] TRUE JVM ARGUMENTS: %s\n" "$*"
 printf "\n###===========================================================###"
 exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" "$@"
 WRAPPER
