@@ -130,10 +130,9 @@ fi
 
 
 
-printf "\n###===========================================================###"
-printf >&2 "\n[SHIM] EXECUTING JAVA RUNTIME: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
-printf >&2 "[SHIM] TRUE JVM ARGUMENTS: %s\n" "$*"
-printf "\n###===========================================================###"
+printf "\033[1;92m###===========================================================###"
+printf >&2 "\033[1;92m[SHIM] EXECUTING JAVA RUNTIME: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"jkhjkh
+printf >&2 "\033[1;92m[SHIM] TRUE JVM ARGUMENTS: %s\n" "$*"
 exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" "$@"
 WRAPPER
 
