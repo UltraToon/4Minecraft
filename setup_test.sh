@@ -28,6 +28,7 @@ install_java() {
 install_lwjgl_arm64() {
   [[ "$(uname -m)" != "arm64" || -f "$NATIVES_DIR/liblwjgl.dylib" ]] && return
   echo "Installing ARM64 LWJGL natives and jars..."
+  rm -rf "$NATIVES_DIR" "$JARS_DIR"
   mkdir -p "$NATIVES_DIR" "$JARS_DIR"
   local BASE="https://repo1.maven.org/maven2/org/lwjgl"
   local VER="3.3.1"
