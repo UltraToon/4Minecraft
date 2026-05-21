@@ -1,7 +1,7 @@
 ## Temporary Setup (USE THIS)
-Create a new shortcut
-Add shell script module and go through preferences
-Paste this in:
+Create a new shortcut\n
+Add shell script module and go through preferences\n
+Paste this in:\n
 ```sh
 #!/bin/bash
 bash <(curl -fsSL https://raw.githubusercontent.com/UltraToon/4Minecraft/refs/heads/main/setup.sh)
