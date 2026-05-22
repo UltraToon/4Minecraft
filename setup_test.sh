@@ -60,7 +60,7 @@ install_launcher() {
   "usingCustomJavaPath": true,
   "ignoreJavaOnInstanceLaunch": true,
   "javaPath": "${MCDIR}/JavaWrapper/Contents/Home",
-  "keepLauncherOpen": false,
+  "keepLauncherOpen": true,
   "enableConsole": false,
   "useRecycleBin": true,
   "maximumMemory": 4096,
