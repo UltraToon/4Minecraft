@@ -6,7 +6,7 @@ NATIVES_DIR="$MCDIR/lwjgl-arm64-natives"
 JARS_DIR="$MCDIR/lwjgl-arm64-jars"
 
 # TODO
-#  Incrementally install java depending on launched version instead of initilization
+# Incrementally install java depending on launched version instead of initilization
 # Edit backup settings more
 # Find a way to do LGJWL 2 and LGJWL 1.17
 
@@ -50,9 +50,8 @@ install_lwjgl_arm64() {
 ##################################### DO NOT QUOTIZE CAT FILE INSERTIONS NO 'FOO', ONLY FOO
 # Minecraft enforces LWJGL x86_64 binaries even with arm support + Java arm64 17 on 1.17-1.18.2, the LWJGL loader overrides this but its broken. Do not use rosetta for 1.17-1.18.2 as its emulated performance
 install_launcher() {
-  [[ -f "$LAUNCHER_DIR/ATLauncher.jar" && -f "$LAUNCHER_DIR/configs/ATLauncher.json" ]] && return
-  mkdir -p "$LAUNCHER_DIR/configs" #Also creates LAUNCHER_DIR if it doesn't exist
-  curl -fsSL -o "$LAUNCHER_DIR/ATLauncher.jar" "$(curl -s https://api.github.com/repos/ATLauncher/ATLauncher/releases/latest | grep -o 'https://[^"]*\.jar')"
+  mkdir -p "$LAUNCHER_DIR/configs"
+  [[ ! -f "$LAUNCHER_DIR/ATLauncher.jar" ]] && curl -fsSL -o "$LAUNCHER_DIR/ATLauncher.jar" "$(curl -s https://api.github.com/repos/ATLauncher/ATLauncher/releases/latest | grep -o 'https://[^"]*\.jar')"
   cat >"$LAUNCHER_DIR/configs/ATLauncher.json" <<SETTINGS
 {
   "firstTimeRun": false,
@@ -74,9 +73,6 @@ install_launcher() {
 SETTINGS
 }
 
-# Writes a thin Java shim that ATLauncher calls for every instance launch.
-# The shim reads instance.json to find the required Java version, then exec's
-# into the correct Corretto — leaving zero memory/CPU overhead while playing.
 # ATLauncher will say executing with appended args, but its usually not actually being executed as this does this action and can choose whether to carry those args or not. Misleading eh
 create_wrapper() {
   local bin="$MCDIR/JavaWrapper/Contents/Home/bin"
@@ -113,8 +109,7 @@ for arg in "$@"; do
   elif [[ "$arg" == -Djava.library.path=* ]]; then
     new_args+=("-Djava.library.path=$NATIVES")
   elif [[ "$arg" == "-cp" ]]; then
-    new_args+=("$arg")
-    cp_next=true
+    new_args+=("$arg"); cp_next=true
   else
     new_args+=("$arg")
   fi
@@ -122,10 +117,9 @@ done
 set -- "${new_args[@]}"
 fi
 
-printf "###===========================================================###"
-printf >&2 "[SHIM] EXECUTING JAVA RUNTIME: %s\n" "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java"
+printf >&2 "[SHIM] Runtime: Java%s | MC: %s\n" "$JAVA_VER" "$MC_VER"
 printf >&2 "[SHIM] ACTUAL JVM ARGUMENTS: %s\n" "$*"
-exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" "$@"
+exec "$MCDIR/Java${JAVA_VER}/Contents/Home/bin/java" -Xdock:name="Notes" -Xdock:icon="/System/Applications/Notes.app/Contents/Resources/AppIcon.icns" "$@"
 WRAPPER
   chmod +x "$bin/java"
 }
@@ -152,7 +146,7 @@ install_lwjgl_arm64
 create_wrapper
 install_launcher
 
-pkill -f "ATLauncher.jar" 2>/dev/null || true
+pkill -x "java" 2>/dev/null || true
 cd "$LAUNCHER_DIR"
 "$MCDIR/Java21/Contents/Home/bin/java" -jar "$LAUNCHER_DIR/ATLauncher.jar" || osascript -e 'display dialog "ATLauncher failed to start. Try re-running the script. Contact xploczx@gmail.com if issue persists." buttons {"OK"} with title "SEHS Minecraft"'
 # Using Java LTS versions for launcher bootup, this is the latest as of now.
